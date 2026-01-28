@@ -42,10 +42,11 @@ Next.js (UI only)           n8n (All business logic)
 **Package Manager**: npm (not pnpm!)
 
 ```bash
-npm run dev          # Start dev server (port 3003)
+npm run dev -p 3003  # Start dev server (port 3003)
 npm run db:migrate   # Run migrations
 npm run db:studio    # Database GUI
 ```
+
 
 ---
 
