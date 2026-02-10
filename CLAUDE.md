@@ -7,10 +7,16 @@
 
 ---
 
+## Context Bridge
+**Before starting work**: Read `docs/HANDOFF.md` for current state.
+**Before ending session**: Update `docs/HANDOFF.md` with what changed.
+
+---
+
 ## Project Overview
 
 **Purpose**: AI chatbot for MAS volunteer consultants
-**Status**: Phase 1 MVP Development
+**Status**: Phase 1 UI Complete - Ready for Phase 2 (n8n workflows)
 **Working Directory**: `/home/brian/workspace/development/mas-vc-chatbot`
 
 ---
@@ -35,18 +41,22 @@ Next.js (UI only)           n8n (All business logic)
 
 ## Tech Stack
 
-**Frontend**: Next.js 16, TypeScript, Tailwind CSS 4, shadcn/ui, Drizzle ORM
+**Frontend**: Next.js 16.1.3, React 19.2.3, TypeScript 5, Tailwind CSS 4, shadcn/ui
+**ORM**: Drizzle ORM 0.45.1 with Drizzle Kit 0.31.8
 **Backend**: n8n at https://n8n.masadvise.org
 **AI**: Claude API (Anthropic) - called from n8n
 **Database**: Postgres (dev: Docker `dev-postgres`, prod: Vercel)
+**Other**: Framer Motion 12.26, Zod 4.3, date-fns 4.1, nanoid 5.1, sonner 2.0
 **Package Manager**: npm (not pnpm!)
 
 ```bash
-npm run dev -p 3003  # Start dev server (port 3003)
+npm run dev          # Start dev server (port 3003, auto-starts dev-postgres)
+npm run build        # Build (runs db:migrate first)
 npm run db:migrate   # Run migrations
+npm run db:generate  # Generate migrations from schema
 npm run db:studio    # Database GUI
+npm run db:push      # Push schema changes directly
 ```
-
 
 ---
 
@@ -72,29 +82,44 @@ npm run db:studio    # Database GUI
 
 ## Key Files
 
-**This Repo** (Next.js UI):
-- `README.md`, `package.json`, `.env.local`
-- Project plan: `/mnt/c/Documents and Settings/brian/Downloads/VC_CHATBOT_PROJECT (1).md`
+**Routes & Pages**:
+- `src/app/page.tsx` - Home (generates chat ID, redirects to /chat/[id])
+- `src/app/(chat)/chat/[id]/page.tsx` - Chat page (renders ChatInterface)
+- `src/app/(chat)/chat/[id]/actions.ts` - Server action for saveMessage
+- `src/app/api/messages/route.ts` - POST endpoint for message persistence
+
+**Components** (`src/components/chat/`):
+- `chat-interface.tsx` - Main orchestration (state, streaming, DB saves)
+- `message-list.tsx` - Message display with auto-scroll
+- `message-input.tsx` - Input textarea (Enter to send, Shift+Enter newline)
+- `message.tsx` - Individual message bubble (user right, assistant left)
+
+**Database** (`src/lib/db/`):
+- `schema.ts` - Tables: User, Chat, Message (with metadata JSON for tool calls)
+- `queries.ts` - Helpers: getUserByEmail, createChat, getMessagesByChatId, createMessage
+- `index.ts` - Drizzle connection setup
+- `migrations/` - Generated SQL migrations
+
+**n8n Integration** (`src/lib/n8n/`):
+- `streaming-client.ts` - SSE client (mock + real n8n functions)
+- `types.ts` - N8NStreamChunk, ChatMessage interfaces
+
+**shadcn/ui** (`src/components/ui/`): button, card, input, textarea, scroll-area
+
+**Docs** (`docs/`): SETUP_COMPLETE.md, NEXT_STEPS.md, TESTING_GUIDE.md
 
 **n8n Workflows** (Business Logic):
 - **Location**: `/home/brian/workspace/workflows/personal/mas-vc-chatbot/`
 - **Workflows**: `civicrm-tool-handler.json`, future streaming workflows
-- **Documentation**: Detailed n8n implementation docs, CiviCRM API v4 reference, testing procedures
-
-**Reference**: `/home/brian/workspace/development/mas-ai-chatbot/` (similar patterns)
 
 **n8n Guidance** (Shared): `/home/brian/workspace/workflows/docs/`
-- `N8N_AI_GUIDANCE.md` - MCP tools
-- `WORKFLOW_PATTERNS.md` - Common patterns
-- `N8N_BEST_PRACTICES.md` - Standards
-- `API_AUTHENTICATION.md` - HTTP auth best practices
 
 ---
 
 ## Environment
 
 ```bash
-# .env.local
+# .env.local (see .env.example for template)
 POSTGRES_URL=postgresql://username:password@localhost:5432/vc_chatbot
 NEXT_PUBLIC_N8N_WEBHOOK_URL=https://n8n.masadvise.org/webhook/vc-chat-stream
 NEXT_PUBLIC_N8N_WEBHOOK_TOKEN=your-token-here
@@ -103,7 +128,16 @@ NEXT_PUBLIC_N8N_WEBHOOK_TOKEN=your-token-here
 **Database setup**:
 ```bash
 docker exec dev-postgres psql -U brian -d n8n -c "CREATE DATABASE vc_chatbot;"
+npm run db:migrate
 ```
+
+---
+
+## Current State
+
+**Auth**: NOT implemented yet - hardcoded `userId = 'temp-user-id'`
+**Streaming**: Mock mode active in chat-interface.tsx (toggle to real n8n when ready)
+**UI**: Fully functional chat with mock data at http://localhost:3003
 
 ---
 
@@ -132,30 +166,30 @@ docker exec dev-postgres psql -U brian -d n8n -c "CREATE DATABASE vc_chatbot;"
 2. **vc-chatbot-stream.json** - Main chat orchestration with Claude streaming
 3. **vc-chatbot-knowledge.json** - Knowledge base retrieval from Google Docs
 
-**Detailed n8n Documentation**: See `/home/brian/workspace/workflows/personal/mas-vc-chatbot/` for:
-- CiviCRM API v4 authentication patterns
-- RelationshipCache join patterns
-- Testing procedures and troubleshooting
-- Import instructions
+---
+
+## MVP Progress
+
+**Phase 1 - Next.js UI** (COMPLETE):
+- [x] Chat interface components (4 components)
+- [x] SSE streaming client (mock + real)
+- [x] Database schema & migrations (User, Chat, Message)
+- [x] API route for message persistence
+- [x] Route structure (/chat/[id])
+- [x] shadcn/ui components & Tailwind theming
+
+**Phase 2 - n8n Workflows** (TODO):
+- [ ] Build vc-chatbot-stream.json (main orchestration)
+- [ ] Build vc-chatbot-knowledge.json (knowledge base)
+- [ ] Configure CiviCRM credentials in n8n
+- [ ] Switch UI from mock to real n8n streaming
+
+**Phase 3 - Integration & Polish** (TODO):
+- [ ] User authentication
+- [ ] Chat history sidebar
+- [ ] End-to-end testing
+- [ ] Production deployment (Vercel)
 
 ---
 
-## Phase 1 MVP Checklist
-
-**Week 1** (Next.js - CLI):
-- [ ] Chat interface components
-- [ ] SSE streaming client
-- [ ] Database tables/migrations
-
-**Week 2** (n8n - Web):
-- [ ] Design workflows with MCP tools
-- [ ] Validate and test
-
-**Week 3** (Integration - Both):
-- [ ] Connect UI to n8n
-- [ ] Test end-to-end
-- [ ] Polish and deploy
-
----
-
-**Last Updated**: 2026-01-22
+**Last Updated**: 2026-02-10
