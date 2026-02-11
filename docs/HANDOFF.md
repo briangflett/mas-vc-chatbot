@@ -1,40 +1,266 @@
-# HANDOFF.md - Cross-Environment Context Bridge
+# VC Chatbot Handoff Document
 
-This file bridges context between claude.ai web (Klaus) and Claude Code.
-**Every session should end by updating this file.**
+> Complete design specification for the MAS Volunteer Coordinator AI Chatbot.
+> Any Claude session can pick up this project from this document.
+
+## Last Updated
+- **Date**: 2026-02-11
+- **Updated by**: Klaus (claude.ai web)
+- **Session summary**: Updated tool auth to use `httpRequestWithAuthentication` (credential-based, no hardcoded tokens). All 5 Code Tool nodes now reference `mas-vc-chatbot Header Auth` credential. Also updated HANDOFF.md for GitHub sync.
 
 ---
 
-## Last Update
-- **Updated by**: claude.ai web (Klaus)
-- **Date**: 2026-02-10
-- **Session summary**: Strategic planning session — defined project workflow between claude.ai and Claude Code, assessed current state, ready to start Phase 2.
+## Project Overview
 
-## Current State
+**Goal:** Build an AI chatbot for MAS (Management Advisory Service) Volunteer Coordinators (VCs) that can answer questions about MAS processes, search contacts/cases in CiviCRM, and provide guidance from MAS's knowledge base.
+
+**Target Users:** ~50 active Volunteer Coordinators who manage nonprofit consulting engagements for MAS.
+
+**Deployment:** Embedded chat widget on masadvise.org (WordPress), powered by n8n Chat Trigger + Anthropic Claude.
+
+---
+
+## Current State (as of 2026-02-11)
 
 ### What's Working
-- Phase 1 UI complete: chat interface, message persistence, SSE client (mock mode), route structure
-- 4 shadcn/ui components, Tailwind theming
-- Database schema: User, Chat, Message tables with Drizzle ORM
-- Mock streaming functional at localhost:3003
-- CiviCRM tool handler workflow exists in n8n (civicrm-tool-handler.json)
+- **civicrm-tool-handler** (KKik67GlUddpDQED): Built, tested, **ACTIVE**. 4 CiviCRM tools with eval framework.
+- **vc-chatbot-stream** (O0phZvFcYNr7BGis): **FULLY BUILT AND DEPLOYED**. Chat Trigger + AI Agent + 5 Code Tools + Memory. Active.
+- **Anthropic credential**: Confirmed — `brian.g.flett Anthropic account` (7UPj62kj2GRdAC8j)
+- **Tool authentication**: All 5 Code Tools use `httpRequestWithAuthentication('httpHeaderAuth', ...)` referencing `mas-vc-chatbot Header Auth` credential (qNVAh8ZXzS0SxXm1). No hardcoded tokens.
 
 ### What's Not Working / Not Built
-- n8n streaming orchestration workflow (vc-chatbot-stream.json) — not started
-- Knowledge base retrieval workflow (vc-chatbot-knowledge.json) — not started
-- Auth — hardcoded userId = 'temp-user-id'
-- UI is in mock mode — not connected to real n8n backend
+- **vc-chatbot-knowledge** (mnodV7Z4bkPuuvGV): Skeleton only. Needs pgvector RAG implementation.
+- **pgvector**: Not yet enabled on Azure PostgreSQL. Extension confirmed available on Azure Flexible Server.
+- **Knowledge base ingestion**: vc-chatbot-ingest workflow not built yet.
+- **Knowledge base tool**: Fails gracefully with helpful error message until vc-chatbot-knowledge is built.
 
 ### What's In Progress
-- Nothing half-done. Clean handoff point.
+- Nothing half-done. Clean handoff point between Phase 2 (complete) and Phase 1 KB infrastructure (next).
 
-## Decisions Made (not yet in code)
+---
 
-- **Architecture**: Next.js handles ONLY UI. ALL business logic (AI, tools, knowledge) lives in n8n workflows. This keeps Next.js simple and allows non-developers to maintain n8n.
-- **Streaming**: SSE from n8n to Next.js. Mock client exists, real client ready to toggle.
-- **CiviCRM tools**: 4 tools (search_contacts, get_contact, search_cases, get_case) — reusable for future MCP server.
-- **Knowledge base MVP**: Google Docs API retrieval (not vector search). Keep it simple for Phase 1.
-- **Package manager**: npm (not pnpm) for this project.
+## Architecture
+
+### Option A: n8n AI Agent with Chat Trigger - IMPLEMENTED
+
+```
+n8n Chat Trigger (public hosted) -> AI Agent -> [Auto Response]
+                                      |
+                            +-- Anthropic Claude Sonnet 4 (LLM)
+                            +-- Window Buffer Memory (10 messages)
+                            +-- Tool: Search Contacts (Code Tool -> civicrm-tools webhook)
+                            +-- Tool: Get Contact (Code Tool -> civicrm-tools webhook)
+                            +-- Tool: Search Cases (Code Tool -> civicrm-tools webhook)
+                            +-- Tool: Get Case (Code Tool -> civicrm-tools webhook)
+                            +-- Tool: Search Knowledge Base (Code Tool -> vc-chatbot-knowledge webhook)
+```
+
+**Chat widget URL**: Available at n8n Chat Trigger hosted URL when workflow is active.
+**Allowed origins**: https://www.masadvise.org
+
+### Option B: Next.js + Vercel AI SDK (Future Upgrade)
+
+True token-by-token streaming, richer UI, full control. Upgrade path if VCs want a more polished experience.
+
+---
+
+## Existing n8n Workflows
+
+### civicrm-tool-handler (ID: KKik67GlUddpDQED)
+
+**Status:** Built, tested, **ACTIVE**. Has eval framework.
+**Webhook:** POST /webhook/civicrm-tools (Header Auth: mas-vc-chatbot)
+**Credential:** CiviCRM Custom Auth (ID: WIv1YM35QT3gS3E9)
+
+**4 Tools:**
+
+| Tool | Input | What it does |
+|------|-------|-------------|
+| search_contacts | search_term, filter_type (all/active_vcs/org_employees), organization_id, limit | Searches contacts via CiviCRM API4. Returns id, display_name, contact_type, email, employer. |
+| get_contact | contactId | Gets full contact details including VC status, phone, sub-type. |
+| search_cases | unassigned (bool), vc_contact_id, client_org_id, status, limit | Searches cases with JOINs to get client + VC coordinator info. Custom fields included. |
+| get_case | caseId | Gets full case details with all custom fields, client, and VC coordinator. |
+
+**Input format:** `{ "toolName": "search_contacts", "toolInput": { "search_term": "Smith", "filter_type": "active_vcs" } }`
+
+**CiviCRM API4 pattern:** Code nodes build params object -> stringify -> POST to /civicrm/ajax/api4/{entity}/{action} with form-urlencoded body.
+
+### vc-chatbot-stream (ID: O0phZvFcYNr7BGis)
+
+**Status:** FULLY BUILT AND DEPLOYED. Active.
+
+**9 Nodes:**
+- Chat Trigger (public hosted, v1.4)
+- AI Agent (v3.1, max 10 iterations)
+- Anthropic Chat Model (claude-sonnet-4-20250514, temp 0.3, max 2048 tokens)
+- Simple Memory (Window Buffer, 10 messages, session-based)
+- 5 Code Tools (search_contacts, get_contact, search_cases, get_case, search_knowledge_base)
+
+**Tool auth pattern:** All tools use `this.helpers.httpRequestWithAuthentication('httpHeaderAuth', {...})` referencing `mas-vc-chatbot Header Auth` credential. No hardcoded bearer tokens.
+
+**System prompt:** Comprehensive MAS AI Assistant instructions covering capabilities, guidelines, and tool usage patterns.
+
+### vc-chatbot-knowledge (ID: mnodV7Z4bkPuuvGV)
+
+**Status:** Skeleton only, inactive. Needs redesign for pgvector RAG.
+
+---
+
+## Knowledge Base Strategy
+
+### Sources
+
+| Source | Type | Volume | Access |
+|--------|------|--------|--------|
+| masadvise.org/blog | Web pages | ~50 posts | Public, scrape or manual copy |
+| masadvise.org/mas-publications | Web pages/PDFs | ~30 docs | Public |
+| SharePoint: MAS Resource Library | Word/Excel/PDF | ~100 files | Internal, manual download |
+| SharePoint: VC Support Centre | Word/Excel/PDF | ~50 files | Internal, manual download |
+
+**Total estimated:** 200-300 documents, mostly static (updated rarely).
+
+### Storage: PostgreSQL + pgvector
+
+**Why:** Brian already has Azure PostgreSQL. No additional services or costs.
+**Extension:** Name is `vector` (not `pgvector`) for both Azure allowlist and CREATE EXTENSION.
+**Confirmed:** pgvector fully supported on Azure Database for PostgreSQL Flexible Server.
+
+**Setup steps:**
+1. Azure Portal -> Server Parameters -> add `VECTOR` to azure.extensions allowlist
+2. Connect to klaus database: `CREATE EXTENSION IF NOT EXISTS vector;`
+3. Verify: `SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';`
+
+**Schema:**
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE vc_knowledge_documents (
+    id SERIAL PRIMARY KEY,
+    source_type VARCHAR(50) NOT NULL,
+    source_url TEXT,
+    title TEXT NOT NULL,
+    filename TEXT,
+    content TEXT NOT NULL,
+    content_hash VARCHAR(64),
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE vc_knowledge_chunks (
+    id SERIAL PRIMARY KEY,
+    document_id INTEGER REFERENCES vc_knowledge_documents(id) ON DELETE CASCADE,
+    chunk_index INTEGER NOT NULL,
+    chunk_text TEXT NOT NULL,
+    embedding vector(1536) NOT NULL,
+    token_count INTEGER,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX ON vc_knowledge_chunks USING ivfflat (embedding vector_cosine_ops) WITH (lists = 20);
+CREATE INDEX ON vc_knowledge_documents (source_type);
+CREATE INDEX ON vc_knowledge_chunks (document_id);
+```
+
+### Chunking Strategy
+
+- Chunk size: 500 tokens (~2000 chars) with 100 token overlap
+- Embedding model: OpenAI text-embedding-3-small (1536 dimensions, $0.02/1M tokens)
+
+### RAG Retrieval SQL
+
+```sql
+SELECT c.chunk_text, d.title, d.source_type, d.source_url,
+       1 - (c.embedding <=> $1::vector) AS similarity
+FROM vc_knowledge_chunks c
+JOIN vc_knowledge_documents d ON d.id = c.document_id
+ORDER BY c.embedding <=> $1::vector
+LIMIT 5;
+```
+
+---
+
+## Implementation Roadmap
+
+### ~~Phase 2: Build vc-chatbot-stream~~ COMPLETE
+- AI Agent with Chat Trigger deployed
+- 5 Code Tools wired with credential-based auth
+- Window Buffer Memory configured
+- Anthropic Claude Sonnet 4 as LLM
+
+### Phase 1: Knowledge Base Infrastructure (2-3 hours) -- NEXT
+1. Enable pgvector on Azure PostgreSQL (add VECTOR to allowlist, CREATE EXTENSION)
+2. Run CREATE TABLE statements
+3. Build vc-chatbot-ingest workflow
+4. Extract and load documents from all 4 sources
+5. Verify with test queries
+
+### Phase 3: Testing (1-2 hours)
+1. Test knowledge base queries
+2. Test CiviCRM tool calls (already functional)
+3. Test multi-turn conversations
+4. Test edge cases
+5. Run eval framework
+
+### Phase 4: Deployment (1 hour)
+1. Embed chat widget on masadvise.org (iframe or n8n hosted URL)
+2. Share with pilot VCs
+
+### Phase 5: Polish (ongoing)
+1. Refine system prompt based on VC feedback
+2. Add more documents to knowledge base
+3. Consider upgrade to Option B if needed
+
+---
+
+## Credentials
+
+| Credential | ID | Status | Used By |
+|-----------|-----|--------|--------|
+| CiviCRM Custom Auth | WIv1YM35QT3gS3E9 | Ready | civicrm-tool-handler |
+| mas-vc-chatbot Header Auth | qNVAh8ZXzS0SxXm1 | Ready | civicrm-tool-handler webhook + vc-chatbot-stream tools |
+| Anthropic API | 7UPj62kj2GRdAC8j | Ready | vc-chatbot-stream AI Agent |
+| OpenAI API | (check n8n) | Need to verify | Embeddings for pgvector |
+| PostgreSQL (Azure) | (check n8n) | Ready | Knowledge base tables |
+
+---
+
+## Key Files and Repos
+
+| Resource | Location |
+|----------|----------|
+| This document | GitHub: briangflett/mas-vc-chatbot/docs/HANDOFF.md |
+| Design spec (canonical) | Klaus Google Drive: HANDOFF.md |
+| civicrm-tool-handler | n8n workflow KKik67GlUddpDQED |
+| vc-chatbot-stream | n8n workflow O0phZvFcYNr7BGis |
+| vc-chatbot-knowledge | n8n workflow mnodV7Z4bkPuuvGV |
+| CiviCRM eval spreadsheet | Google Sheets 1RI2FB7ynXu2xnrvZ382eBZZlQFzwrJZORajIBMH_13w |
+| PostgreSQL | mas-n8n-postgress-db.postgres.database.azure.com (db: klaus) |
+
+---
+
+## Decisions Made
+
+- **Architecture**: n8n Chat Trigger + AI Agent for MVP. Next.js streaming as future upgrade.
+- **Tool auth**: `httpRequestWithAuthentication('httpHeaderAuth', ...)` -- credential-based, no hardcoded tokens.
+- **LLM**: claude-sonnet-4-20250514 (temp 0.3, max 2048 tokens)
+- **Memory**: Window Buffer, 10 messages (5 exchanges), session-based
+- **Knowledge base**: PostgreSQL + pgvector on existing Azure Postgres. Manual one-time ingestion.
+- **Chat interface**: n8n Chat Trigger public hosted mode (fastest deployment path)
+- **Package manager**: pnpm (for any Next.js work)
+
+---
+
+## Open Questions
+
+1. **OpenAI API credential**: Confirm exists in n8n for embeddings.
+2. **Document list**: Which specific Google Docs / SharePoint files should be indexed first?
+3. **Chat widget branding**: n8n built-in Chat Trigger widget vs custom Next.js UI for MAS branding.
+4. **Document refresh**: Consider scheduled re-ingestion if docs change quarterly.
+5. **Access control**: Should all VCs see the same data, or respect CiviCRM permissions?
+
+---
 
 ## Strategic Context
 
@@ -43,34 +269,10 @@ This project is one of two MAS consulting engagements being used to:
 2. Build case studies for convincing other Canadian nonprofits to adopt AI
 3. Demonstrate the "AI as knowledge retrieval assistant" pattern
 
-The flywheel: deliver great projects → extract case studies → create demand → land more engagements.
-
-## Next Actions
-
-1. **Build vc-chatbot-stream.json** — Main n8n orchestration workflow (Claude API + tool routing + SSE streaming) → **claude.ai web + n8n UI**
-2. **Build vc-chatbot-knowledge.json** — Knowledge base retrieval from Google Docs → **claude.ai web + n8n UI**
-3. **Configure CiviCRM credentials** in n8n for the tool handler → **n8n UI**
-4. **Switch UI from mock to real n8n** — Toggle in chat-interface.tsx → **Claude Code**
-5. **End-to-end testing** → **Claude Code + n8n UI**
-
-## Blockers / Questions for Brian
-
-- What Google Docs should the knowledge base index? Need a list of VC-relevant documents.
-- CiviCRM credentials: are they already configured in n8n or do they need setup?
-- Any changes to the 4 CiviCRM tools since the initial design?
-
-## Environment Notes for Claude Code
-
-- Dev server: `npm run dev` (port 3003, auto-starts dev-postgres)
-- n8n instance: https://n8n.masadvise.org
-- n8n workflow files: `/home/brian/workspace/workflows/personal/mas-vc-chatbot/`
-- n8n shared docs: `/home/brian/workspace/workflows/docs/`
-
-## Context Files Changed This Session
-
-- Created: `docs/HANDOFF.md` (this file)
-- Updated: `CLAUDE.md` (via Claude Code — added Context Bridge, updated status)
+The flywheel: deliver great projects -> extract case studies -> create demand -> land more engagements.
 
 ---
 
-*Maintained by Klaus (claude.ai) and Claude Code. The baton in the relay race.*
+*Created: 2026-02-10*
+*Last updated: 2026-02-11*
+*Author: Klaus (Brian's AI assistant)*
