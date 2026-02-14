@@ -5,8 +5,8 @@
 
 ## Last Updated
 - **Date**: 2026-02-11
-- **Updated by**: Klaus (claude.ai web)
-- **Session summary**: Updated tool auth to use `httpRequestWithAuthentication` (credential-based, no hardcoded tokens). All 5 Code Tool nodes now reference `mas-vc-chatbot Header Auth` credential. Also updated HANDOFF.md for GitHub sync.
+- **Updated by**: Claude Code (CLI)
+- **Session summary**: Planning session for Phase 1 KB infrastructure. Confirmed Azure PostgreSQL is ready (v14, Standard_B1ms, Canada Central). Discovered that the `n8n-mcp` MCP server (api.n8n-mcp.com) provides full workflow CRUD tools (Create, Update, Search Nodes, Validate, etc.) but requires `/mcp` re-authentication in Claude Code CLI. The `n8n` server (n8n.masadvise.org/mcp-server/http) only provides 3 tools (search, execute, get_details). Next session: use n8n-mcp tools to build Phase 1.
 
 ---
 
@@ -23,10 +23,12 @@
 ## Current State (as of 2026-02-11)
 
 ### What's Working
-- **civicrm-tool-handler** (KKik67GlUddpDQED): Built, tested, **ACTIVE**. 4 CiviCRM tools with eval framework.
-- **vc-chatbot-stream** (O0phZvFcYNr7BGis): **FULLY BUILT AND DEPLOYED**. Chat Trigger + AI Agent + 5 Code Tools + Memory. Active.
+- **civicrm-tool-handler** (KKik67GlUddpDQED): Built, tested, **ACTIVE**. 4 CiviCRM tools with eval framework. Still useful for direct API testing and evals.
+- **vc-chatbot-civicrm-sub** (nmVIws1rIVYhpgMi): **NEW**. Sub-workflow called by AI Agent's Workflow Tools. Receives toolName + params, routes to CiviCRM API4 via HTTP Request with CiviCRM Custom Auth credential. **ACTIVE**.
+- **vc-chatbot-stream** (O0phZvFcYNr7BGis): **FULLY BUILT AND DEPLOYED**. Chat Trigger + AI Agent + 4 Workflow Tools + 1 Code Tool (KB placeholder) + Memory. **ACTIVE**.
+- **CiviCRM tools**: All 4 verified working end-to-end (search_contacts, get_contact, search_cases, get_case return real CiviCRM data).
 - **Anthropic credential**: Confirmed — `brian.g.flett Anthropic account` (7UPj62kj2GRdAC8j)
-- **Tool authentication**: All 5 Code Tools use `httpRequestWithAuthentication('httpHeaderAuth', ...)` referencing `mas-vc-chatbot Header Auth` credential (qNVAh8ZXzS0SxXm1). No hardcoded tokens.
+- **Tool architecture**: 4 CiviCRM tools use Workflow Tool nodes → vc-chatbot-civicrm-sub sub-workflow → CiviCRM API4 with CiviCRM Custom Auth credential. No hardcoded tokens.
 
 ### What's Not Working / Not Built
 - **vc-chatbot-knowledge** (mnodV7Z4bkPuuvGV): Skeleton only. Needs pgvector RAG implementation.
@@ -48,12 +50,14 @@ n8n Chat Trigger (public hosted) -> AI Agent -> [Auto Response]
                                       |
                             +-- Anthropic Claude Sonnet 4 (LLM)
                             +-- Window Buffer Memory (10 messages)
-                            +-- Tool: Search Contacts (Code Tool -> civicrm-tools webhook)
-                            +-- Tool: Get Contact (Code Tool -> civicrm-tools webhook)
-                            +-- Tool: Search Cases (Code Tool -> civicrm-tools webhook)
-                            +-- Tool: Get Case (Code Tool -> civicrm-tools webhook)
-                            +-- Tool: Search Knowledge Base (Code Tool -> vc-chatbot-knowledge webhook)
+                            +-- Tool: Search Contacts (Workflow Tool -> vc-chatbot-civicrm-sub -> CiviCRM API4)
+                            +-- Tool: Get Contact (Workflow Tool -> vc-chatbot-civicrm-sub -> CiviCRM API4)
+                            +-- Tool: Search Cases (Workflow Tool -> vc-chatbot-civicrm-sub -> CiviCRM API4)
+                            +-- Tool: Get Case (Workflow Tool -> vc-chatbot-civicrm-sub -> CiviCRM API4)
+                            +-- Tool: Search Knowledge Base (Code Tool -> placeholder until KB built)
 ```
+
+**Why Workflow Tools instead of Code Tools?** `httpRequestWithAuthentication()` is not supported in Code Tool nodes. Workflow Tool nodes call a sub-workflow where regular Code/HTTP Request nodes have full credential access.
 
 **Chat widget URL**: Available at n8n Chat Trigger hosted URL when workflow is active.
 **Allowed origins**: https://www.masadvise.org
@@ -85,6 +89,19 @@ True token-by-token streaming, richer UI, full control. Upgrade path if VCs want
 
 **CiviCRM API4 pattern:** Code nodes build params object -> stringify -> POST to /civicrm/ajax/api4/{entity}/{action} with form-urlencoded body.
 
+### vc-chatbot-civicrm-sub (ID: nmVIws1rIVYhpgMi)
+
+**Status:** Built, tested, **ACTIVE**. Sub-workflow for CiviCRM tool calls.
+
+**7 Nodes:**
+- Execute Workflow Trigger (accepts: toolName, search_term, filter_type, organization_id, limit, contactId, unassigned, vc_contact_id, client_org_id, status, caseId)
+- Switch: Route by Tool (4 outputs by toolName)
+- 4 Code nodes: Build Search Contact Request, Build Get Contact Request, Build Search Cases Request, Build Get Case Request
+- HTTP Request: CiviCRM API4 (POST, form-urlencoded, CiviCRM Custom Auth credential)
+
+**Credential:** CiviCRM Custom Auth (ID: WIv1YM35QT3gS3E9)
+**Called by:** vc-chatbot-stream Workflow Tool nodes
+
 ### vc-chatbot-stream (ID: O0phZvFcYNr7BGis)
 
 **Status:** FULLY BUILT AND DEPLOYED. Active.
@@ -94,9 +111,10 @@ True token-by-token streaming, richer UI, full control. Upgrade path if VCs want
 - AI Agent (v3.1, max 10 iterations)
 - Anthropic Chat Model (claude-sonnet-4-20250514, temp 0.3, max 2048 tokens)
 - Simple Memory (Window Buffer, 10 messages, session-based)
-- 5 Code Tools (search_contacts, get_contact, search_cases, get_case, search_knowledge_base)
+- 4 Workflow Tools (search_contacts, get_contact, search_cases, get_case) → call vc-chatbot-civicrm-sub
+- 1 Code Tool (search_knowledge_base) → returns placeholder message until KB is built
 
-**Tool auth pattern:** All tools use `this.helpers.httpRequestWithAuthentication('httpHeaderAuth', {...})` referencing `mas-vc-chatbot Header Auth` credential. No hardcoded bearer tokens.
+**Tool pattern:** Workflow Tool nodes call vc-chatbot-civicrm-sub sub-workflow via n8n internal execution. Sub-workflow uses HTTP Request node with CiviCRM Custom Auth credential. No bearer tokens in vc-chatbot-stream.
 
 **System prompt:** Comprehensive MAS AI Assistant instructions covering capabilities, guidelines, and tool usage patterns.
 
@@ -185,9 +203,11 @@ LIMIT 5;
 
 ### ~~Phase 2: Build vc-chatbot-stream~~ COMPLETE
 - AI Agent with Chat Trigger deployed
-- 5 Code Tools wired with credential-based auth
+- 4 Workflow Tool nodes calling vc-chatbot-civicrm-sub (replaced Code Tools — `httpRequestWithAuthentication` not supported in Code Tool nodes)
+- 1 Code Tool for knowledge base (placeholder)
 - Window Buffer Memory configured
 - Anthropic Claude Sonnet 4 as LLM
+- All 4 CiviCRM tools verified returning real data (2026-02-11)
 
 ### Phase 1: Knowledge Base Infrastructure (2-3 hours) -- NEXT
 1. Enable pgvector on Azure PostgreSQL (add VECTOR to allowlist, CREATE EXTENSION)
@@ -218,8 +238,8 @@ LIMIT 5;
 
 | Credential | ID | Status | Used By |
 |-----------|-----|--------|--------|
-| CiviCRM Custom Auth | WIv1YM35QT3gS3E9 | Ready | civicrm-tool-handler |
-| mas-vc-chatbot Header Auth | qNVAh8ZXzS0SxXm1 | Ready | civicrm-tool-handler webhook + vc-chatbot-stream tools |
+| CiviCRM Custom Auth | WIv1YM35QT3gS3E9 | Ready | civicrm-tool-handler, vc-chatbot-civicrm-sub |
+| mas-vc-chatbot Header Auth | qNVAh8ZXzS0SxXm1 | Ready | civicrm-tool-handler webhook auth |
 | Anthropic API | 7UPj62kj2GRdAC8j | Ready | vc-chatbot-stream AI Agent |
 | OpenAI API | (check n8n) | Need to verify | Embeddings for pgvector |
 | PostgreSQL (Azure) | (check n8n) | Ready | Knowledge base tables |
@@ -233,6 +253,7 @@ LIMIT 5;
 | This document | GitHub: briangflett/mas-vc-chatbot/docs/HANDOFF.md |
 | Design spec (canonical) | Klaus Google Drive: HANDOFF.md |
 | civicrm-tool-handler | n8n workflow KKik67GlUddpDQED |
+| vc-chatbot-civicrm-sub | n8n workflow nmVIws1rIVYhpgMi |
 | vc-chatbot-stream | n8n workflow O0phZvFcYNr7BGis |
 | vc-chatbot-knowledge | n8n workflow mnodV7Z4bkPuuvGV |
 | CiviCRM eval spreadsheet | Google Sheets 1RI2FB7ynXu2xnrvZ382eBZZlQFzwrJZORajIBMH_13w |
@@ -243,7 +264,7 @@ LIMIT 5;
 ## Decisions Made
 
 - **Architecture**: n8n Chat Trigger + AI Agent for MVP. Next.js streaming as future upgrade.
-- **Tool auth**: `httpRequestWithAuthentication('httpHeaderAuth', ...)` -- credential-based, no hardcoded tokens.
+- **Tool auth**: Workflow Tool → sub-workflow → HTTP Request with CiviCRM Custom Auth. (Code Tool `httpRequestWithAuthentication` is NOT supported — discovered 2026-02-11.)
 - **LLM**: claude-sonnet-4-20250514 (temp 0.3, max 2048 tokens)
 - **Memory**: Window Buffer, 10 messages (5 exchanges), session-based
 - **Knowledge base**: PostgreSQL + pgvector on existing Azure Postgres. Manual one-time ingestion.
@@ -275,4 +296,4 @@ The flywheel: deliver great projects -> extract case studies -> create demand ->
 
 *Created: 2026-02-10*
 *Last updated: 2026-02-11*
-*Author: Klaus (Brian's AI assistant)*
+*Authors: Klaus (Brian's AI assistant), Claude Code (CLI)*
