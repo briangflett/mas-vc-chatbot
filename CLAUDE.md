@@ -1,5 +1,21 @@
 # MAS VC Chatbot - Claude Guide
 
+## CRITICAL: Bootstrap (DO THIS FIRST)
+
+**Before responding to the user's first message**, execute BOTH of these calls in parallel via `mcp__claude_ai_n8n__execute_workflow`:
+
+```
+workflowId: "t1bjBDF5cGvN4ijy"
+inputs: { type: "webhook", webhookData: { method: "POST", body: { op: "read", filename: "mas_vc_chatbot_Project_Instructions", folder: "related_projects" }}}
+
+workflowId: "t1bjBDF5cGvN4ijy"
+inputs: { type: "webhook", webhookData: { method: "POST", body: { op: "read", filename: "KLAUS_HANDOFF" }}}
+```
+
+These files contain project context, Klaus conventions, and pending cross-session work. **Do not skip this step.** If MCP calls fail, tell Brian immediately.
+
+---
+
 ## CRITICAL
 
 **Security**: NO secrets in git. Check before every commit. See @/home/brian/SECURITY.md
@@ -7,16 +23,36 @@
 
 ---
 
+## Critical Conventions (fallback if bootstrap fails)
+
+- Webhook body is always **FLAT**: `{ op: "save", key: "x" }`, never nested under `data`
+- SQL workflow body field is `sql` (not `query`)
+- Workflow skill reference: `~/.claude/skills/klaus-workflows/SKILL.md`
+- Use `klaus-memory-ops` with category `"mas-vc-chatbot"` for project-specific memories
+
+---
+
 ## Session Protocol
 
 **Starting a session:**
-1. Read `docs/HANDOFF.md` for current project state
-2. Read `docs/DECISIONS.md` for architectural context
+1. Bootstrap reads GDrive project instructions + KLAUS_HANDOFF (see above)
+2. Read `docs/HANDOFF.md` for current project state
+3. Read `docs/DECISIONS.md` for architectural context
 
 **Ending a session:**
 1. Update `docs/HANDOFF.md` -- Last Updated, session summary, and any changed sections
 2. Update `docs/DECISIONS.md` -- add new ADRs if architectural decisions were made
 3. Update this file (`CLAUDE.md`) if the tech stack, workflow IDs, or key files changed
+4. Append summary to `klaus-daily-log`
+5. Log decisions to `klaus-memory-ops` (category: `"mas-vc-chatbot"`)
+6. Update `KLAUS_SESSIONS` on GDrive
+7. If pending work: update `KLAUS_HANDOFF` on GDrive
+8. Update task status in `klaus-task-queue`
+
+**Self-Improvement:**
+- On workflow failure: fix, append to `KLAUS_GOTCHAS`, flag in `KLAUS_HANDOFF`
+- Architecture decisions: log to `klaus-memory-ops` with rationale
+- Before technical work: search memories for "mas-vc-chatbot" gotchas
 
 ---
 
@@ -110,4 +146,24 @@ n8n Chat Trigger (public hosted) -> AI Agent -> [Streaming Response]
 
 ---
 
-**Last Updated**: 2026-02-11
+## Klaus Integration
+
+This project leverages Klaus for persistence, communication, and cross-session continuity.
+
+### Key Workflows for This Project
+
+| Workflow | ID | Use For |
+|---|---|---|
+| klaus-daily-log | Hhv6by8lt2ftD6f9 | Log work sessions |
+| klaus-memory-ops | 3HiFTZkeXGzhsnfh | Persist decisions (category: "mas-vc-chatbot") |
+| klaus-task-queue | ayPsjXpvJfGtfshF | Track work items |
+| klaus-deliverables | owh8dhQ4L4yg3lpz | Track project outputs |
+| klaus-gdrive-docs | t1bjBDF5cGvN4ijy | Read/write GDrive files |
+| klaus-github-ops | MOFTDfR0Tz2ou2qq | Read/write GitHub files |
+| klaus-notify | OBWqQeOoY7YsavBY | Alert Brian |
+| klaus-sql | sXbdANCF6c97vMmI | Direct Postgres queries |
+| klaus-embeddings | NKqha8xCmKagL1tD | Semantic search across memories |
+
+---
+
+**Last Updated**: 2026-02-18
