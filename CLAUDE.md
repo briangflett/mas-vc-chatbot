@@ -6,20 +6,20 @@
 
 ```
 workflowId: "t1bjBDF5cGvN4ijy"
-inputs: { type: "webhook", webhookData: { method: "POST", body: { op: "read", filename: "mas_vc_chatbot_Project_Instructions", folder: "related_projects" }}}
+inputs: { type: "webhook", webhookData: { method: "POST", body: { op: "read", id: "1xBLec6e-tFppWGdlyUblqeJH6nxZtq9yiQ-W5KBQasI" }}}
 
 workflowId: "t1bjBDF5cGvN4ijy"
-inputs: { type: "webhook", webhookData: { method: "POST", body: { op: "read", filename: "KLAUS_HANDOFF" }}}
+inputs: { type: "webhook", webhookData: { method: "POST", body: { op: "read", id: "1vjalMFMzYHqsNfkia9kkp7I6EVygPtZA3ZYI3kc6wCA" }}}
 ```
 
-These files contain project context, Klaus conventions, and pending cross-session work. **Do not skip this step.** If MCP calls fail, tell Brian immediately.
+These files contain Klaus system context, conventions, self-improvement protocol, infrastructure details, and session workflow. **Do not skip this step.** If MCP calls fail, tell Brian immediately. Full ID table in `.claude/skills/klaus-workflows/GDRIVE.md`.
 
 ---
 
-## CRITICAL
+## CRITICAL: Security
 
-**Security**: NO secrets in git. Check before every commit. See @/home/brian/SECURITY.md
-**Document maintenance**: Keep docs current -- see "Session Protocol" below.
+**NEVER commit secrets to git.** Check before every commit: `git diff --cached`
+Real secrets ONLY in `.env.local` (git-ignored). Reference: @/home/brian/SECURITY.md
 
 ---
 
