@@ -7,16 +7,14 @@ Real secrets ONLY in `.env.local` (git-ignored). Reference: @/home/brian/SECURIT
 
 ---
 
-## Session Protocol
+## Session Lifecycle
 
-**Starting a session:**
-1. Read `docs/HANDOFF.md` for current project state
-2. Read `docs/DECISIONS.md` for architectural context
+- **Start**: `/bootstrap` (loads Klaus context, checks pending handoffs)
+- **End**: `/wrapup` (logs summary, updates SESSIONS, handles handoffs, checks git)
 
-**Ending a session:**
-1. Update `docs/HANDOFF.md` -- Last Updated, session summary, and any changed sections
-2. Update `docs/DECISIONS.md` -- add new ADRs if architectural decisions were made
-3. Update this file (`CLAUDE.md`) if the tech stack, workflow IDs, or key files changed
+**Project-specific context** (read at session start):
+1. `docs/HANDOFF.md` — current project state
+2. `docs/DECISIONS.md` — architectural context (add new ADRs when decisions are made)
 
 ---
 
@@ -110,8 +108,8 @@ n8n Chat Trigger (public hosted) -> AI Agent -> [Streaming Response]
 
 ## Klaus Integration
 
-This project uses Klaus for session persistence, memory, and task tracking. Klaus capabilities are provided via the globally available `klaus-workflows` skill and MCP servers. Private project context (workflow IDs, session protocol) is maintained in the claude.ai web project settings.
+Klaus capabilities are provided via the globally available `klaus-workflows`, `bootstrap`, and `wrapup` skills.
 
 ---
 
-**Last Updated**: 2026-02-26
+**Last Updated**: 2026-03-15
