@@ -21,7 +21,7 @@ Real secrets ONLY in `.env.local` (git-ignored). Reference: @/home/brian/SECURIT
 ## Project Overview
 
 **Purpose**: AI chatbot for MAS Volunteer Coordinators (~50 users) to search CiviCRM contacts/cases and query a knowledge base about MAS processes.
-**Status**: Phase 2 complete (chat + CiviCRM tools working). Phase 1 KB infrastructure next.
+**Status**: CiviCRM tools working, KB infrastructure ready (pgvector + ingest pipeline), populating KB content.
 **Deployment**: n8n Chat Trigger widget embedded on masadvise.org (WordPress).
 **Working Directory**: `/home/brian/workspace/development/mas-vc-chatbot`
 
@@ -35,10 +35,10 @@ n8n Chat Trigger (public hosted) -> AI Agent -> [Streaming Response]
                             +-- Anthropic Claude Sonnet 4 (LLM)
                             +-- Window Buffer Memory (10 messages)
                             +-- 4 Workflow Tools -> vc-chatbot-civicrm-sub -> CiviCRM API4
-                            +-- 1 Code Tool (KB placeholder)
+                            +-- 1 KB Search Tool -> PGVector Store (pgvector on Azure PostgreSQL)
 ```
 
-**All business logic lives in n8n.** This repo contains docs and a dormant Next.js app (future upgrade path).
+**All business logic lives in n8n.** This repo contains project documentation and KB content.
 
 **Key constraint**: `httpRequestWithAuthentication()` is NOT supported in Code Tool nodes. Use Workflow Tool + sub-workflow pattern for any tool that needs credentials. See `docs/DECISIONS.md` ADR-002.
 
@@ -50,8 +50,8 @@ n8n Chat Trigger (public hosted) -> AI Agent -> [Streaming Response]
 |----------|----|--------|---------|
 | vc-chatbot-stream | O0phZvFcYNr7BGis | Active | Main chat: Chat Trigger + AI Agent + tools + memory |
 | vc-chatbot-civicrm-sub | nmVIws1rIVYhpgMi | Active | Sub-workflow: routes CiviCRM tool calls to API4 |
+| vc-chatbot-ingest | d1yOknmooRczDmIc | Active | KB document ingestion into pgvector |
 | civicrm-tool-handler | KKik67GlUddpDQED | Active | Standalone CiviCRM API wrapper with eval framework |
-| vc-chatbot-knowledge | mnodV7Z4bkPuuvGV | Inactive | Skeleton -- needs pgvector RAG implementation |
 
 **n8n instance**: https://n8n.masadvise.org
 
@@ -76,22 +76,28 @@ n8n Chat Trigger (public hosted) -> AI Agent -> [Streaming Response]
 |-----------|-----|---------|
 | CiviCRM Custom Auth | WIv1YM35QT3gS3E9 | civicrm-tool-handler, vc-chatbot-civicrm-sub |
 | Anthropic API | 7UPj62kj2GRdAC8j | vc-chatbot-stream |
-| PostgreSQL (Azure) | (check n8n) | Knowledge base (future) |
+| OpenAI API | (check n8n) | Embeddings for KB ingestion and retrieval |
+| PostgreSQL (Azure) | (check n8n) | Knowledge base vector store |
 
 ---
 
 ## Key Files
 
 **Documentation** (`docs/`):
-- `HANDOFF.md` -- Canonical project state, architecture, roadmap, credentials
-- `DECISIONS.md` -- Architectural Decision Records (ADRs)
+- `HANDOFF.md` — Canonical project state, architecture, roadmap, credentials
+- `DECISIONS.md` — Architectural Decision Records (ADRs)
+- `KNOWLEDGE_BASE.md` — KB document templates and setup guide
+- `CIVICRM_TOOLS.md` — CiviCRM tool specifications
+- `CIVICRM_API_V4_REFERENCE.md` — CiviCRM API4 patterns
+- `N8N_WORKFLOWS.md` — Workflow architecture details
+- `QUICK_REFERENCE.md` — Quick reference
 
-**Next.js app** (dormant -- future Option B upgrade):
-- `src/` -- Chat UI components, Drizzle ORM, SSE client
-- Uses npm (not pnpm) if reactivated
+**KB content** (`docs/kb-content/`):
+- Authored knowledge base documents for ingestion into pgvector
 
 **Related paths**:
-- n8n workflow exports: `/home/brian/workspace/workflows/personal/mas-vc-chatbot/`
+- n8n workflow exports: `/home/brian/workspace/workflows/personal/mas-vc-chatbot/workflows/`
+- Sync script: `/home/brian/workspace/workflows/personal/mas-vc-chatbot/scripts/sync-workflows.sh`
 - CiviCRM API4 protocol: `/home/brian/workspace/claude/context/mas-claude-context/claude-code/global/protocols/api4.md`
 
 ---
@@ -112,4 +118,4 @@ Klaus capabilities are provided via the globally available `klaus-workflows`, `b
 
 ---
 
-**Last Updated**: 2026-03-15
+**Last Updated**: 2026-04-06

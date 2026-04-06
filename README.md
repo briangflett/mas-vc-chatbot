@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MAS VC Chatbot
 
-## Getting Started
+AI chatbot for MAS (Management Advisory Service) Volunteer Coordinators (~50 users). Searches CiviCRM contacts/cases and queries a knowledge base about MAS processes.
 
-First, run the development server:
+## Architecture
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+All business logic runs in **n8n workflows** on [n8n.masadvise.org](https://n8n.masadvise.org). The chat interface uses n8n's built-in Chat Trigger widget, embedded on masadvise.org via WordPress.
+
+```
+n8n Chat Trigger (public hosted) -> AI Agent -> [Streaming Response]
+                                      |
+                            +-- Anthropic Claude Sonnet 4 (LLM)
+                            +-- Window Buffer Memory (10 messages)
+                            +-- 4 CiviCRM Tools -> vc-chatbot-civicrm-sub -> CiviCRM API4
+                            +-- 1 KB Search Tool -> PGVector Store (pgvector on Azure PostgreSQL)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## n8n Workflows
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Workflow | ID | Status | Purpose |
+|----------|----|--------|---------|
+| vc-chatbot-stream | O0phZvFcYNr7BGis | Active | Main chat: Chat Trigger + AI Agent + tools + memory |
+| vc-chatbot-civicrm-sub | nmVIws1rIVYhpgMi | Active | Sub-workflow: routes CiviCRM tool calls to API4 |
+| vc-chatbot-ingest | d1yOknmooRczDmIc | Active | KB document ingestion into pgvector |
+| civicrm-tool-handler | KKik67GlUddpDQED | Active | Standalone CiviCRM API wrapper with eval framework |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Documentation
 
-## Learn More
+- [HANDOFF.md](docs/HANDOFF.md) - Canonical project state, architecture, roadmap
+- [DECISIONS.md](docs/DECISIONS.md) - Architectural Decision Records
+- [KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md) - KB document templates and setup
+- [CIVICRM_TOOLS.md](docs/CIVICRM_TOOLS.md) - CiviCRM tool specifications
+- [N8N_WORKFLOWS.md](docs/N8N_WORKFLOWS.md) - Workflow architecture details
 
-To learn more about Next.js, take a look at the following resources:
+## Related
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Workflow JSON exports: [`briangflett/n8n-brian-workflows`](https://github.com/briangflett/n8n-brian-workflows) (private) under `mas-vc-chatbot/workflows/`
+- n8n instance: https://n8n.masadvise.org
