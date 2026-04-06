@@ -1,0 +1,133 @@
+# Start your own nonprofit (Part 1)
+
+Source: https://www.masadvise.org/strategic-planning-and-facilitation/planning/start-nonprofit-part-1/
+
+[Skip to content](https://www.masadvise.org/strategic-planning-and-facilitation/planning/start-nonprofit-part-1/#content)
+
+- [Planning](https://www.masadvise.org/category/strategic-planning-and-facilitation/planning/), [Strategic Planning](https://www.masadvise.org/category/strategic-planning-and-facilitation/strategic-planning/)
+
+## Start your own nonprofit (Part 1)
+
+- February 23, 2017
+- [BY\\
+Leila MacDonald](https://www.masadvise.org/author/leila-macdonald/)
+
+![](https://www.masadvise.org/wp-content/uploads/2017/03/start-non-profit2.jpg)
+
+###### You have an idea that can help others.  Where do you start?  First, figure out how to structure your idea.  Do you want to start a nonprofit?  Or a charity?  Or a for-profit enterprise?
+
+There are 170,000 nonprofits in Canada.  All have a goal that is something other than profit.  They do not have shareholders and they are exempt from tax.  About 50% of nonprofits stay as nonprofits.  They are able to collect fees that cover their costs.  Examples include sports leagues and associations with professional membership dues.
+
+**So what is the difference between nonprofits and charities?**  The other 50% know that they cannot collect fees to cover their costs because the people they serve cannot afford them.  So they need to raise funds ….. so they need to give tax receipts …. so they need a charitable designation from the Canada Revenue Agency.  These nonprofits are called charities.  Another reason why some nonprofits don’t get their charitable designation is that the CRA requires their purpose to address poverty, education, religion or community.
+
+5 PATHS TO STRUCTURE YOUR IDEA
+
+**Path #1 – Incorporate as a for-profit**
+
+Set a price that just covers your costs.  You won’t make much profit and therefore you won’t pay much tax, just like a nonprofit.  This option allows you to test whether your idea can stand on its own.  If you want, you can attract angel investors because you can give them equity.
+
+For example, Charity Village is a fabulous online site for job postings, volunteer postings, newsletters and free webinars.  Their business model happens to be for-profit, because they want to remain nimble.
+
+**Path #2 – Incorporate as a for-profit and align with a charity**
+
+This allows for 2 separate entities, with 2 separate Boards of Directors.  For marketing purposes, you benefit from halo effect of the charity’s brand:  you get immediate credibility and immediate access to their audience.   To compensate the charity for the risk of aligning with their brand, they get a consistent revenue stream from you.  Note: any funds raised by the charity cannot flow back to the for-profit. Typically, the same people found both organizations and there are rules about the overlap.
+
+For example: Free the Children is a charity. ME to WE is the for-profit that directs half of its net profits to them.
+
+Stay tuned for Start Your Own Non-Profit, Part 2.
+
+If you have any questions about non-profit start ups or want to learn more about how MAS can help, [click here](https://masadvise.org/request-assistance-form/) .
+
+![Picture of Leila MacDonald](https://secure.gravatar.com/avatar/dca135aa9b3429a6a5d60187f97ff218b26798c5b91d92ca07ff3a5d6700baad?s=300&d=mm&r=g)
+
+#### Leila MacDonald
+
+Lelia worked in financial services marketing for ten years and then moved on to an extended maternity leave. As she returned to the workforce, Leila began to do some pro-bono work with local non-profits, offering them strategic marketing advice and eventually found her way to MAS. Leila’s website www.marketingfornonprofits.ca offers advice for directors, senior management and marketing volunteers for non-profit organizations.
+
+Search
+
+[Facebook-f](https://masadvise.org/facebook)[Linkedin-in](https://masadvise.org/linkedin)[Twitter](https://masadvise.org/twitter)
+
+quick links
+
+[**» Resources**](https://www.masadvise.org/resources)
+
+[**» Webinars**](https://www.masadvise.org/mas-webinars)
+
+[**» Workshops**](https://www.masadvise.org/about/workshops)
+
+[**» Publications**](https://www.masadvise.org/mas-publications)
+
+[**» Presentations**](https://www.masadvise.org/presentations-about-MAS)
+
+[View Services](https://www.masadvise.org/services-strategic-planning-and-facilitation)
+
+### [View Services](https://www.masadvise.org/services-strategic-planning-and-facilitation)
+
+Check out what we offer.
+
+[Our team](https://www.masadvise.org/our-team)
+
+### [Our team](https://www.masadvise.org/our-team)
+
+Meet the MAS team.
+
+[Donate Today](https://www.canadahelps.org/dn/9753)
+
+### [Donate Today](https://www.canadahelps.org/dn/9753)
+
+Help us to do more.
+
+[Any Questions?](https://www.masadvise.org/contact-us)
+
+### [Any Questions?](https://www.masadvise.org/contact-us)
+
+Contact us today!
+
+Related articles
+
+[![](https://www.masadvise.org/wp-content/uploads/2025/10/AI-for-Nonprofits-Advanced-Techniques.png)](https://www.masadvise.org/finance-and-it/ai/ai-for-nonprofits-advanced-techniques/)
+
+### [AI for Nonprofits – Advanced Techniques](https://www.masadvise.org/finance-and-it/ai/ai-for-nonprofits-advanced-techniques/)
+
+[![](https://www.masadvise.org/wp-content/uploads/2025/09/Practical-Use-of-AI-for-NonProfits.jpg)](https://www.masadvise.org/finance-and-it/ai/ai-for-nonprofits-getting-started/)
+
+### [AI for Nonprofits – Getting Started](https://www.masadvise.org/finance-and-it/ai/ai-for-nonprofits-getting-started/)
+
+[![Refresh strategy](https://www.masadvise.org/wp-content/uploads/2022/09/Refresh-graphic.webp)](https://www.masadvise.org/strategic-planning-and-facilitation/strategic-planning/strategy-refresh-our-strategy-is-still-good-do-we-need-to-start-from-scratch/)
+
+### [Strategy Refresh – Our Strategy is still good – do we need to start from scratch?](https://www.masadvise.org/strategic-planning-and-facilitation/strategic-planning/strategy-refresh-our-strategy-is-still-good-do-we-need-to-start-from-scratch/)
+
+[![](https://www.masadvise.org/wp-content/uploads/2020/10/1coronavirus-5154115_1920-300x169.jpg)](https://www.masadvise.org/strategic-planning-and-facilitation/strategic-planning/scenario-planning-how-can-i-do-a-3-5-year-strategic-plan-when-i-dont-know-what-will-happen-next-month/)
+
+### [Scenario Planning – How can I do a 3-5 year Strategic Plan when I don’t know what will happen next month?](https://www.masadvise.org/strategic-planning-and-facilitation/strategic-planning/scenario-planning-how-can-i-do-a-3-5-year-strategic-plan-when-i-dont-know-what-will-happen-next-month/)
+
+[![](https://www.masadvise.org/wp-content/uploads/2020/07/Blog-July-20-2-300x216.png)](https://www.masadvise.org/governance/why-evaluate-your-programs/)
+
+### [Why Evaluate your Programs?](https://www.masadvise.org/governance/why-evaluate-your-programs/)
+
+## Some of our happy clients
+
+### Amazing Support
+
+Thank you for the amazing support that you provided us during the past year for our Strategic Planning and Performance Management System.
+
+**Kristin Griffith**
+
+Executive Director, Harmony Hall
+
+### Absolutely Amazing
+
+The ArtHeart Board has approved the strategic plan and is in the process of setting up committees and actually doing the items within the plan — so it's underway. You were absolutely amazing in guiding us through the process.
+
+**Seanna Connell**
+
+Co-Chair, ArtHeart Community Art Centre
+
+### Fantastic Job
+
+MAS has done a fantastic job of facilitating working sessions that have resulted in real agreement and results. I would highly recommend MAS to any agency seeking support for this type of work.
+
+**Anne Babcock**
+
+COO at WoodGreen
