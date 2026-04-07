@@ -21,7 +21,7 @@ Real secrets ONLY in `.env.local` (git-ignored). Reference: @/home/brian/SECURIT
 ## Project Overview
 
 **Purpose**: AI chatbot for MAS Volunteer Coordinators (~50 users) to search CiviCRM contacts/cases and query a knowledge base about MAS processes.
-**Status**: CiviCRM tools working. KB loaded (482 vectors from 80 docs via Python script). Ingest workflow broken — see handoff #73.
+**Status**: Fully functional. CiviCRM tools + KB retrieval working (482 vectors, 80 docs). Tested 2026-04-07. Next: embed widget on masadvise.org + soft launch.
 **Deployment**: n8n Chat Trigger widget embedded on masadvise.org (WordPress).
 **Working Directory**: `/home/brian/workspace/development/mas-vc-chatbot`
 
@@ -50,7 +50,8 @@ n8n Chat Trigger (public hosted) -> AI Agent -> [Streaming Response]
 |----------|----|--------|---------|
 | vc-chatbot-stream | O0phZvFcYNr7BGis | Active | Main chat: Chat Trigger + AI Agent + tools + memory |
 | vc-chatbot-civicrm-sub | nmVIws1rIVYhpgMi | Active | Sub-workflow: routes CiviCRM tool calls to API4 |
-| vc-chatbot-ingest | d1yOknmooRczDmIc | **Broken** | KB document ingestion — PGVector Store node fails (azure_pg_admin). Python script used instead. |
+| vc-chatbot-kb-sub | TTPXaeNi7SxWReM4 | Active | Sub-workflow: KB retrieval via OpenAI embeddings + direct SQL |
+| vc-chatbot-ingest | d1yOknmooRczDmIc | Deactivated | KB ingestion — PGVector Store node fails (azure_pg_admin). Python script used instead. |
 | civicrm-tool-handler | KKik67GlUddpDQED | Active | Standalone CiviCRM API wrapper with eval framework |
 
 **n8n instance**: https://n8n.masadvise.org

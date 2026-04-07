@@ -1,0 +1,277 @@
+<link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+<style>
+  .chat-starters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 16px 12px;
+    justify-content: center;
+  }
+  .chat-starters button {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #475569;
+    cursor: pointer;
+    text-align: left;
+    max-width: 180px;
+    line-height: 1.4;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .chat-starters button:hover {
+    border-color: #94a3b8;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .chat-feedback {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 0 2px;
+    margin-top: 4px;
+  }
+  .chat-feedback button {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 4px 6px;
+    cursor: pointer;
+    font-size: 15px;
+    color: #94a3b8;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .chat-feedback button:hover {
+    color: #475569;
+    background: #f1f5f9;
+  }
+  .chat-feedback button.selected {
+    color: #3b82f6;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+  }
+  .chat-feedback-comment {
+    display: flex;
+    gap: 6px;
+    padding: 6px 0;
+    width: 100%;
+  }
+  .chat-feedback-comment input {
+    flex: 1;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    outline: none;
+  }
+  .chat-feedback-comment input:focus {
+    border-color: #93c5fd;
+  }
+  .chat-feedback-comment button {
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .chat-feedback-sent {
+    font-size: 12px;
+    color: #94a3b8;
+    padding: 4px 0;
+  }
+</style>
+<script type="module">
+  import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+  createChat({
+    webhookUrl: 'https://n8n.masadvise.org/webhook/vc-chatbot-stream/chat',
+    mode: 'window',
+    chatInputKey: 'chatInput',
+    initialMessages: [
+      'Welcome! I can help you with MAS processes, find contacts and cases in CiviCRM, and answer questions about nonprofit consulting.'
+    ],
+    defaultLanguage: 'en',
+    i18n: {
+      en: {
+        title: 'MAS AI Assistant',
+        subtitle: 'Ask me about MAS processes, contacts, or cases',
+        getStarted: 'New Conversation',
+        inputPlaceholder: 'Ask a question...'
+      }
+    },
+    metadata: {}
+  });
+
+  // Get WordPress username from page if available
+  const wpUser = (document.querySelector('#wp-admin-bar-my-account .ab-item')?.textContent?.trim()?.split(',')[0])
+    || (document.querySelector('body')?.className?.match(/logged-in-as-(\S+)/)?.[1])
+    || null;
+
+  // Get session ID from chat widget
+  function getSessionId() {
+    try {
+      const chatEl = document.querySelector('#n8n-chat');
+      const app = chatEl?.__vue_app__;
+      const chat = app?._context?.provides?.Chat;
+      return chat?.currentSessionId?._value || chat?.currentSessionId?.value || '';
+    } catch(e) { return ''; }
+  }
+
+  function sendMessage(text) {
+    const chatEl = document.querySelector('#n8n-chat');
+    if (!chatEl) return;
+    const app = chatEl.__vue_app__;
+    if (!app) return;
+    const chat = app._context.provides.Chat;
+    if (chat && chat.sendMessage) chat.sendMessage(text);
+  }
+
+  function submitFeedback(data) {
+    fetch('https://n8n.masadvise.org/webhook/vc-chatbot-feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: getSessionId(),
+        message_index: data.messageIndex,
+        user_message: data.userMessage,
+        bot_response_preview: data.botResponse?.substring(0, 500),
+        rating: data.rating || null,
+        comment: data.comment || null,
+        wp_user: wpUser
+      })
+    }).catch(() => {});
+  }
+
+  function addFeedbackButtons(botMsgEl, messageIndex, userMessage, botResponse) {
+    if (botMsgEl.querySelector('.chat-feedback')) return;
+
+    const fb = document.createElement('div');
+    fb.className = 'chat-feedback';
+
+    const btnUp = document.createElement('button');
+    btnUp.innerHTML = '&#x1F44D;';
+    btnUp.title = 'Helpful';
+
+    const btnDown = document.createElement('button');
+    btnDown.innerHTML = '&#x1F44E;';
+    btnDown.title = 'Not helpful';
+
+    const btnComment = document.createElement('button');
+    btnComment.innerHTML = '&#x1F4AC;';
+    btnComment.title = 'Add a comment';
+
+    function showCommentInput(rating) {
+      let row = fb.parentElement.querySelector('.chat-feedback-comment');
+      if (row) return;
+      row = document.createElement('div');
+      row.className = 'chat-feedback-comment';
+      const input = document.createElement('input');
+      input.placeholder = 'Add a comment (optional)...';
+      input.maxLength = 2000;
+      const send = document.createElement('button');
+      send.textContent = 'Send';
+      send.addEventListener('click', () => {
+        submitFeedback({ messageIndex, userMessage, botResponse, rating, comment: input.value });
+        row.remove();
+        fb.innerHTML = '';
+        const sent = document.createElement('div');
+        sent.className = 'chat-feedback-sent';
+        sent.textContent = 'Thanks for your feedback!';
+        fb.appendChild(sent);
+      });
+      row.appendChild(input);
+      row.appendChild(send);
+      fb.after(row);
+      input.focus();
+    }
+
+    function handleRating(rating, btn, otherBtn) {
+      if (btn.classList.contains('selected')) return;
+      btn.classList.add('selected');
+      otherBtn.classList.remove('selected');
+      showCommentInput(rating);
+    }
+
+    btnUp.addEventListener('click', () => handleRating('up', btnUp, btnDown));
+    btnDown.addEventListener('click', () => handleRating('down', btnDown, btnUp));
+    btnComment.addEventListener('click', () => showCommentInput(null));
+
+    fb.appendChild(btnUp);
+    fb.appendChild(btnDown);
+    fb.appendChild(btnComment);
+    botMsgEl.appendChild(fb);
+  }
+
+  function renderSuggestions(container, suggestions) {
+    const existing = container.querySelectorAll('.chat-starters');
+    existing.forEach(el => el.remove());
+    const div = document.createElement('div');
+    div.className = 'chat-starters';
+    suggestions.forEach(text => {
+      const btn = document.createElement('button');
+      btn.textContent = text;
+      btn.addEventListener('click', () => {
+        div.remove();
+        sendMessage(text);
+      });
+      div.appendChild(btn);
+    });
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function parseSuggestions(el) {
+    const html = el.innerHTML;
+    const match = html.match(/&lt;&lt;(.+?)&gt;&gt;/);
+    if (!match) return null;
+    el.innerHTML = html.replace(/&lt;&lt;(.+?)&gt;&gt;/, '').replace(/<p>\s*<\/p>$/, '');
+    return match[1].split('|').map(s => s.trim()).filter(Boolean);
+  }
+
+  // Watch for new messages
+  let lastBotCount = 0;
+  const observer = new MutationObserver(() => {
+    const messages = document.querySelector('.chat-messages-list');
+    if (!messages) return;
+
+    // Initial starters
+    if (!document.querySelector('.chat-starters') && !document.querySelector('.chat-feedback') && messages.children.length <= 1) {
+      renderSuggestions(messages, [
+        'How do I close a project?',
+        'Show me unassigned cases',
+        'What is the RCS form?',
+        'Find a volunteer coordinator'
+      ]);
+      return;
+    }
+
+    // Process bot messages
+    const botMsgs = messages.querySelectorAll('.chat-message-from-bot');
+    if (botMsgs.length === lastBotCount) return;
+    lastBotCount = botMsgs.length;
+
+    const lastBot = botMsgs[botMsgs.length - 1];
+    const md = lastBot.querySelector('.chat-message-markdown');
+    if (!md || md.dataset.processed) return;
+
+    // Find the user message that preceded this bot response
+    const allMsgs = [...messages.querySelectorAll('.chat-message-from-bot, .chat-message-from-user')];
+    const botIdx = allMsgs.indexOf(lastBot);
+    const prevUser = botIdx > 0 ? allMsgs[botIdx - 1] : null;
+    const userText = prevUser?.querySelector('.chat-message-markdown')?.textContent || prevUser?.textContent || '';
+    const botText = md.textContent || '';
+
+    // Parse suggestions
+    const suggestions = parseSuggestions(md);
+    if (suggestions && suggestions.length > 0) {
+      renderSuggestions(messages, suggestions);
+    }
+
+    // Add feedback buttons
+    addFeedbackButtons(md, botMsgs.length, userText, botText);
+    md.dataset.processed = 'true';
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+</script>

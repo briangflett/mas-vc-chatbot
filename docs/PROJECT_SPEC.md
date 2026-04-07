@@ -89,15 +89,28 @@ True token-by-token streaming, richer UI, full control. Upgrade path if VCs want
 - Anthropic Chat Model (claude-sonnet-4-20250514, temp 0.3, max 2048 tokens)
 - Simple Memory (Window Buffer, 10 messages, session-based)
 - 4 Workflow Tools (search_contacts, get_contact, search_cases, get_case) → call vc-chatbot-civicrm-sub
-- 1 KB Search Tool → PGVector Store (pgvector on Azure PostgreSQL)
+- 1 Workflow Tool (search_knowledge_base) → call vc-chatbot-kb-sub
 
-**Tool pattern:** Workflow Tool nodes call vc-chatbot-civicrm-sub sub-workflow via n8n internal execution. Sub-workflow uses HTTP Request node with CiviCRM Custom Auth credential. No bearer tokens in vc-chatbot-stream.
+**Tool pattern:** All tools use Workflow Tool → sub-workflow pattern. CiviCRM tools call vc-chatbot-civicrm-sub. KB search calls vc-chatbot-kb-sub (OpenAI embeddings + direct SQL cosine similarity). No credentials in vc-chatbot-stream itself.
 
-**System prompt:** Comprehensive MAS AI Assistant instructions covering capabilities, guidelines, and tool usage patterns.
+**System prompt:** Comprehensive MAS AI Assistant instructions covering capabilities, KB topic categories, citation guidance (document titles, SharePoint pointers), scope boundaries, and tool usage patterns. Updated 2026-04-07.
+
+### vc-chatbot-kb-sub (ID: TTPXaeNi7SxWReM4)
+
+**Status:** Built, tested, **ACTIVE**. Sub-workflow for KB retrieval.
+
+**5 Nodes:**
+- Execute Workflow Trigger (accepts: query)
+- HTTP Request: Get Embedding (POST to OpenAI text-embedding-3-small, uses openAiApi credential)
+- Code: Build RAG Query (constructs cosine similarity SQL with embedding vector)
+- Postgres: Search Vectors (executes against vc_knowledge_vectors table, klaus Postgres credential)
+- Code: Format Results (returns top 5 chunks with title, source_type, source_url, relevance %)
+
+**Why direct SQL instead of PGVector Store node?** The n8n PGVector Store node runs `CREATE EXTENSION vector` on every request, which requires azure_pg_admin role. The klaus Postgres account lacks this role. Direct SQL bypasses this issue.
 
 ### vc-chatbot-ingest (ID: d1yOknmooRczDmIc)
 
-**Status:** Broken. PGVector Store node fails due to azure_pg_admin role. KB was loaded via Python script instead (482 vectors from 80 documents, 2026-04-06). See handoff #73.
+**Status:** Deactivated. PGVector Store node fails due to azure_pg_admin role. KB was loaded via Python script instead (482 vectors from 80 documents, 2026-04-06). Workflow deactivated 2026-04-07 to remove open webhook.
 
 ---
 
@@ -195,9 +208,9 @@ LIMIT 5;
 - 482 vectors from 80 documents ingested via Python script
 - KB search tool connected in vc-chatbot-stream
 
-### Phase 4: Testing & Deployment — NEXT
-1. Test KB retrieval via n8n Chat Trigger URL
-2. Refine system prompt (KB categories, citations, scope)
+### Phase 4: Testing & Deployment — IN PROGRESS
+1. ~~Refine system prompt (KB categories, citations, scope)~~ DONE (2026-04-07)
+2. ~~Test KB retrieval via n8n Chat Trigger URL~~ DONE (2026-04-07) — replaced broken PGVector Store node with direct SQL sub-workflow
 3. Embed chat widget on masadvise.org (WordPress)
 4. Soft launch with pilot VCs
 
