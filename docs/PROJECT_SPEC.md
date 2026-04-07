@@ -1,12 +1,8 @@
-# VC Chatbot Handoff Document
+# MAS VC Chatbot — Project Specification
 
-> Complete design specification for the MAS Volunteer Coordinator AI Chatbot.
-> Any Claude session can pick up this project from this document.
-
-## Last Updated
-- **Date**: 2026-02-11
-- **Updated by**: Claude Code (CLI)
-- **Session summary**: Planning session for Phase 1 KB infrastructure. Confirmed Azure PostgreSQL is ready (v14, Standard_B1ms, Canada Central). Discovered that the `n8n-mcp` MCP server (api.n8n-mcp.com) provides full workflow CRUD tools (Create, Update, Search Nodes, Validate, etc.) but requires `/mcp` re-authentication in Claude Code CLI. The `n8n` server (n8n.masadvise.org/mcp-server/http) only provides 3 tools (search, execute, get_details). Next session: use n8n-mcp tools to build Phase 1.
+> Design specification for the MAS Volunteer Coordinator AI Chatbot.
+> For current project state, check Postgres handoff_items via klaus-sql.
+> For architectural decisions, see BrianPKM `1-Projects/mas-vc-chatbot-decisions.md`.
 
 ---
 
@@ -19,25 +15,6 @@
 **Deployment:** Embedded chat widget on masadvise.org (WordPress), powered by n8n Chat Trigger + Anthropic Claude.
 
 ---
-
-## Current State (as of 2026-02-11)
-
-### What's Working
-- **civicrm-tool-handler** (KKik67GlUddpDQED): Built, tested, **ACTIVE**. 4 CiviCRM tools with eval framework. Still useful for direct API testing and evals.
-- **vc-chatbot-civicrm-sub** (nmVIws1rIVYhpgMi): **NEW**. Sub-workflow called by AI Agent's Workflow Tools. Receives toolName + params, routes to CiviCRM API4 via HTTP Request with CiviCRM Custom Auth credential. **ACTIVE**.
-- **vc-chatbot-stream** (O0phZvFcYNr7BGis): **FULLY BUILT AND DEPLOYED**. Chat Trigger + AI Agent + 4 Workflow Tools + 1 Code Tool (KB placeholder) + Memory. **ACTIVE**.
-- **CiviCRM tools**: All 4 verified working end-to-end (search_contacts, get_contact, search_cases, get_case return real CiviCRM data).
-- **Anthropic credential**: Confirmed — `brian.g.flett Anthropic account` (7UPj62kj2GRdAC8j)
-- **Tool architecture**: 4 CiviCRM tools use Workflow Tool nodes → vc-chatbot-civicrm-sub sub-workflow → CiviCRM API4 with CiviCRM Custom Auth credential. No hardcoded tokens.
-
-### What's Not Working / Not Built
-- **vc-chatbot-knowledge** (mnodV7Z4bkPuuvGV): Skeleton only. Needs pgvector RAG implementation.
-- **pgvector**: Not yet enabled on Azure PostgreSQL. Extension confirmed available on Azure Flexible Server.
-- **Knowledge base ingestion**: vc-chatbot-ingest workflow not built yet.
-- **Knowledge base tool**: Fails gracefully with helpful error message until vc-chatbot-knowledge is built.
-
-### What's In Progress
-- Nothing half-done. Clean handoff point between Phase 2 (complete) and Phase 1 KB infrastructure (next).
 
 ---
 
@@ -106,36 +83,38 @@ True token-by-token streaming, richer UI, full control. Upgrade path if VCs want
 
 **Status:** FULLY BUILT AND DEPLOYED. Active.
 
-**9 Nodes:**
+**Nodes:**
 - Chat Trigger (public hosted, v1.4)
 - AI Agent (v3.1, max 10 iterations)
 - Anthropic Chat Model (claude-sonnet-4-20250514, temp 0.3, max 2048 tokens)
 - Simple Memory (Window Buffer, 10 messages, session-based)
 - 4 Workflow Tools (search_contacts, get_contact, search_cases, get_case) → call vc-chatbot-civicrm-sub
-- 1 Code Tool (search_knowledge_base) → returns placeholder message until KB is built
+- 1 KB Search Tool → PGVector Store (pgvector on Azure PostgreSQL)
 
 **Tool pattern:** Workflow Tool nodes call vc-chatbot-civicrm-sub sub-workflow via n8n internal execution. Sub-workflow uses HTTP Request node with CiviCRM Custom Auth credential. No bearer tokens in vc-chatbot-stream.
 
 **System prompt:** Comprehensive MAS AI Assistant instructions covering capabilities, guidelines, and tool usage patterns.
 
-### vc-chatbot-knowledge (ID: mnodV7Z4bkPuuvGV)
+### vc-chatbot-ingest (ID: d1yOknmooRczDmIc)
 
-**Status:** Skeleton only, inactive. Needs redesign for pgvector RAG.
+**Status:** Broken. PGVector Store node fails due to azure_pg_admin role. KB was loaded via Python script instead (482 vectors from 80 documents, 2026-04-06). See handoff #73.
 
 ---
 
-## Knowledge Base Strategy
+## Knowledge Base
+
+### Current State (as of 2026-04-06)
+
+**482 vectors** ingested from **80 documents** across 4 sources via Python script (`scripts/ingest_kb.py`).
 
 ### Sources
 
-| Source | Type | Volume | Access |
-|--------|------|--------|--------|
-| masadvise.org/blog | Web pages | ~50 posts | Public, scrape or manual copy |
-| masadvise.org/mas-publications | Web pages/PDFs | ~30 docs | Public |
-| SharePoint: MAS Resource Library | Word/Excel/PDF | ~100 files | Internal, manual download |
-| SharePoint: VC Support Centre | Word/Excel/PDF | ~50 files | Internal, manual download |
-
-**Total estimated:** 200-300 documents, mostly static (updated rarely).
+| Source | Type | Documents | Access |
+|--------|------|-----------|--------|
+| masadvise.org (Firecrawl) | Web pages | 19 pages + 32 articles | Public |
+| Google Drive publications | PDFs | 14 docs | MAS Google Drive |
+| SharePoint: VC Support Centre | Word/Excel/PDF | 9 docs | Internal |
+| SharePoint: Resource Library | Word/Excel/PDF | 6 index docs | Internal |
 
 ### Storage: PostgreSQL + pgvector
 
@@ -201,36 +180,32 @@ LIMIT 5;
 
 ## Implementation Roadmap
 
-### ~~Phase 2: Build vc-chatbot-stream~~ COMPLETE
+### ~~Phase 1: CiviCRM Tools~~ COMPLETE (2026-02-11)
+- civicrm-tool-handler built with eval framework
+- vc-chatbot-civicrm-sub sub-workflow for credential isolation
+
+### ~~Phase 2: Build vc-chatbot-stream~~ COMPLETE (2026-02-11)
 - AI Agent with Chat Trigger deployed
-- 4 Workflow Tool nodes calling vc-chatbot-civicrm-sub (replaced Code Tools — `httpRequestWithAuthentication` not supported in Code Tool nodes)
-- 1 Code Tool for knowledge base (placeholder)
+- 4 Workflow Tool nodes calling vc-chatbot-civicrm-sub
 - Window Buffer Memory configured
 - Anthropic Claude Sonnet 4 as LLM
-- All 4 CiviCRM tools verified returning real data (2026-02-11)
 
-### Phase 1: Knowledge Base Infrastructure (2-3 hours) -- NEXT
-1. Enable pgvector on Azure PostgreSQL (add VECTOR to allowlist, CREATE EXTENSION)
-2. Run CREATE TABLE statements
-3. Build vc-chatbot-ingest workflow
-4. Extract and load documents from all 4 sources
-5. Verify with test queries
+### ~~Phase 3: Knowledge Base~~ COMPLETE (2026-04-06)
+- pgvector enabled on Azure PostgreSQL
+- 482 vectors from 80 documents ingested via Python script
+- KB search tool connected in vc-chatbot-stream
 
-### Phase 3: Testing (1-2 hours)
-1. Test knowledge base queries
-2. Test CiviCRM tool calls (already functional)
-3. Test multi-turn conversations
-4. Test edge cases
-5. Run eval framework
-
-### Phase 4: Deployment (1 hour)
-1. Embed chat widget on masadvise.org (iframe or n8n hosted URL)
-2. Share with pilot VCs
+### Phase 4: Testing & Deployment — NEXT
+1. Test KB retrieval via n8n Chat Trigger URL
+2. Refine system prompt (KB categories, citations, scope)
+3. Embed chat widget on masadvise.org (WordPress)
+4. Soft launch with pilot VCs
 
 ### Phase 5: Polish (ongoing)
 1. Refine system prompt based on VC feedback
 2. Add more documents to knowledge base
-3. Consider upgrade to Option B if needed
+3. Fix or replace vc-chatbot-ingest workflow
+4. Consider upgrade to Next.js UI if needed
 
 ---
 
@@ -250,26 +225,21 @@ LIMIT 5;
 
 | Resource | Location |
 |----------|----------|
-| This document | GitHub: briangflett/mas-vc-chatbot/docs/HANDOFF.md |
-| Design spec (canonical) | Klaus Google Drive: HANDOFF.md |
+| This document | GitHub: briangflett/mas-vc-chatbot/docs/PROJECT_SPEC.md |
+| Decisions (ADRs) | BrianPKM: 1-Projects/mas-vc-chatbot-decisions.md |
 | civicrm-tool-handler | n8n workflow KKik67GlUddpDQED |
 | vc-chatbot-civicrm-sub | n8n workflow nmVIws1rIVYhpgMi |
 | vc-chatbot-stream | n8n workflow O0phZvFcYNr7BGis |
-| vc-chatbot-knowledge | n8n workflow mnodV7Z4bkPuuvGV |
+| vc-chatbot-ingest | n8n workflow d1yOknmooRczDmIc (broken) |
+| KB ingestion script | scripts/ingest_kb.py |
 | CiviCRM eval spreadsheet | Google Sheets 1RI2FB7ynXu2xnrvZ382eBZZlQFzwrJZORajIBMH_13w |
 | PostgreSQL | mas-n8n-postgress-db.postgres.database.azure.com (db: klaus) |
 
 ---
 
-## Decisions Made
+## Decisions
 
-- **Architecture**: n8n Chat Trigger + AI Agent for MVP. Next.js streaming as future upgrade.
-- **Tool auth**: Workflow Tool → sub-workflow → HTTP Request with CiviCRM Custom Auth. (Code Tool `httpRequestWithAuthentication` is NOT supported — discovered 2026-02-11.)
-- **LLM**: claude-sonnet-4-20250514 (temp 0.3, max 2048 tokens)
-- **Memory**: Window Buffer, 10 messages (5 exchanges), session-based
-- **Knowledge base**: PostgreSQL + pgvector on existing Azure Postgres. Manual one-time ingestion.
-- **Chat interface**: n8n Chat Trigger public hosted mode (fastest deployment path)
-- **Package manager**: pnpm (for any Next.js work)
+See BrianPKM `1-Projects/mas-vc-chatbot-decisions.md` for full ADRs (8 decisions recorded).
 
 ---
 
@@ -295,5 +265,4 @@ The flywheel: deliver great projects -> extract case studies -> create demand ->
 ---
 
 *Created: 2026-02-10*
-*Last updated: 2026-02-11*
-*Authors: Klaus (Brian's AI assistant), Claude Code (CLI)*
+*Last updated: 2026-04-07*

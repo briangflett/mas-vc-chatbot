@@ -10,18 +10,18 @@ Real secrets ONLY in `.env.local` (git-ignored). Reference: @/home/brian/SECURIT
 ## Session Lifecycle
 
 - **Start**: `/bootstrap` (loads Klaus context, checks pending handoffs)
-- **End**: `/wrapup` (logs summary, updates SESSIONS, handles handoffs, checks git)
+- **End**: `/wrapup` (logs summary to Postgres, handles handoffs, checks git)
 
 **Project-specific context** (read at session start):
-1. `docs/HANDOFF.md` — current project state
-2. `docs/DECISIONS.md` — architectural context (add new ADRs when decisions are made)
+1. `docs/PROJECT_SPEC.md` — project design specification
+2. BrianPKM `1-Projects/mas-vc-chatbot-decisions.md` — ADRs (add new decisions here)
 
 ---
 
 ## Project Overview
 
 **Purpose**: AI chatbot for MAS Volunteer Coordinators (~50 users) to search CiviCRM contacts/cases and query a knowledge base about MAS processes.
-**Status**: CiviCRM tools working, KB infrastructure ready (pgvector + ingest pipeline), populating KB content.
+**Status**: CiviCRM tools working. KB loaded (482 vectors from 80 docs via Python script). Ingest workflow broken — see handoff #73.
 **Deployment**: n8n Chat Trigger widget embedded on masadvise.org (WordPress).
 **Working Directory**: `/home/brian/workspace/development/mas-vc-chatbot`
 
@@ -38,9 +38,9 @@ n8n Chat Trigger (public hosted) -> AI Agent -> [Streaming Response]
                             +-- 1 KB Search Tool -> PGVector Store (pgvector on Azure PostgreSQL)
 ```
 
-**All business logic lives in n8n.** This repo contains project documentation and KB content.
+**All business logic lives in n8n.** This repo contains project documentation, KB content, and ingestion scripts.
 
-**Key constraint**: `httpRequestWithAuthentication()` is NOT supported in Code Tool nodes. Use Workflow Tool + sub-workflow pattern for any tool that needs credentials. See `docs/DECISIONS.md` ADR-002.
+**Key constraint**: `httpRequestWithAuthentication()` is NOT supported in Code Tool nodes. Use Workflow Tool + sub-workflow pattern for any tool that needs credentials. See ADR-002 in BrianPKM decisions.
 
 ---
 
@@ -50,7 +50,7 @@ n8n Chat Trigger (public hosted) -> AI Agent -> [Streaming Response]
 |----------|----|--------|---------|
 | vc-chatbot-stream | O0phZvFcYNr7BGis | Active | Main chat: Chat Trigger + AI Agent + tools + memory |
 | vc-chatbot-civicrm-sub | nmVIws1rIVYhpgMi | Active | Sub-workflow: routes CiviCRM tool calls to API4 |
-| vc-chatbot-ingest | d1yOknmooRczDmIc | Active | KB document ingestion into pgvector |
+| vc-chatbot-ingest | d1yOknmooRczDmIc | **Broken** | KB document ingestion — PGVector Store node fails (azure_pg_admin). Python script used instead. |
 | civicrm-tool-handler | KKik67GlUddpDQED | Active | Standalone CiviCRM API wrapper with eval framework |
 
 **n8n instance**: https://n8n.masadvise.org
@@ -84,13 +84,10 @@ n8n Chat Trigger (public hosted) -> AI Agent -> [Streaming Response]
 ## Key Files
 
 **Documentation** (`docs/`):
-- `HANDOFF.md` — Canonical project state, architecture, roadmap, credentials
-- `DECISIONS.md` — Architectural Decision Records (ADRs)
-- `KNOWLEDGE_BASE.md` — KB document templates and setup guide
+- `PROJECT_SPEC.md` — Project design spec (architecture, schema, roadmap, credentials)
 - `CIVICRM_TOOLS.md` — CiviCRM tool specifications
 - `CIVICRM_API_V4_REFERENCE.md` — CiviCRM API4 patterns
-- `N8N_WORKFLOWS.md` — Workflow architecture details
-- `QUICK_REFERENCE.md` — Quick reference
+- `claude-ai-project-instructions.md` — claude.ai web project pointer
 
 **KB content** (`docs/kb-content/`):
 - Authored knowledge base documents for ingestion into pgvector
@@ -118,4 +115,4 @@ Klaus capabilities are provided via the globally available `klaus-workflows`, `b
 
 ---
 
-**Last Updated**: 2026-04-06
+**Last Updated**: 2026-04-07
