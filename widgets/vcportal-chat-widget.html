@@ -222,21 +222,20 @@
     container.scrollTop = container.scrollHeight;
   }
 
-  function parseSuggestions(el) {
-    const html = el.innerHTML;
-    const match = html.match(/&lt;&lt;(.+?)&gt;&gt;/);
-    if (!match) return null;
-    el.innerHTML = html.replace(/&lt;&lt;(.+?)&gt;&gt;/, '').replace(/<p>\s*<\/p>$/, '');
-    return match[1].split('|').map(s => s.trim()).filter(Boolean);
-  }
+  // Poll for new bot messages and process them.
+  // A MutationObserver with childList doesn't work here because the n8n chat
+  // widget (Vue) adds the bot message container first, then renders markdown
+  // content inside it without triggering a second childList mutation.
+  const processedMessages = new Set();
+  let initialStartersShown = false;
 
-  // Watch for new messages
-  const observer = new MutationObserver(() => {
+  setInterval(() => {
     const messages = document.querySelector('.chat-messages-list');
     if (!messages) return;
 
-    // Initial starters on first load
-    if (!document.querySelector('.chat-starters') && !document.querySelector('.chat-feedback') && messages.children.length <= 1) {
+    // Show initial suggestion starters on first load
+    if (!initialStartersShown && messages.children.length <= 1 && !document.querySelector('.chat-feedback')) {
+      initialStartersShown = true;
       renderSuggestions(messages, [
         'How do I close a project?',
         'Show me unassigned cases',
@@ -246,17 +245,23 @@
       return;
     }
 
-    // Scan all bot messages for unparsed suggestions (handles streaming)
+    // Process bot messages
     const botMsgs = messages.querySelectorAll('.chat-message-from-bot');
     botMsgs.forEach((botMsg, idx) => {
       const md = botMsg.querySelector('.chat-message-markdown');
-      if (!md || md.dataset.feedbackDone) return;
+      if (!md) return;
+
+      const key = 'bot-' + idx;
+      if (processedMessages.has(key)) return;
+
+      const html = md.innerHTML;
+      // Skip if content is too short (still loading)
+      if (!html || html.length < 20) return;
 
       // Only process once we see the <<...>> marker (response is complete)
-      const html = md.innerHTML;
       if (!html.includes('&lt;&lt;') || !html.includes('&gt;&gt;')) return;
 
-      // Parse and render suggestions
+      // Parse and render suggestion buttons
       const match = html.match(/&lt;&lt;(.+?)&gt;&gt;/);
       if (match) {
         md.innerHTML = html.replace(/&lt;&lt;(.+?)&gt;&gt;/, '').replace(/<p>\s*<\/p>\s*$/, '');
@@ -273,8 +278,18 @@
       const userText = prevUser?.querySelector('.chat-message-markdown')?.textContent || prevUser?.textContent || '';
       const botText = md.textContent || '';
       addFeedbackButtons(md, idx + 1, userText, botText);
-      md.dataset.feedbackDone = 'true';
+
+      // Scroll to the start of this response so user sees the beginning
+      const chatBody = document.querySelector('.chat-body');
+      if (chatBody) {
+        const userMsg = botIdx > 0 ? allMsgs[botIdx - 1] : botMsg;
+        const target = userMsg || botMsg;
+        const bodyRect = chatBody.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        chatBody.scrollTop += targetRect.top - bodyRect.top - 8;
+      }
+
+      processedMessages.add(key);
     });
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
+  }, 500);
 </script>
