@@ -231,12 +231,11 @@
   }
 
   // Watch for new messages
-  let lastBotCount = 0;
   const observer = new MutationObserver(() => {
     const messages = document.querySelector('.chat-messages-list');
     if (!messages) return;
 
-    // Initial starters
+    // Initial starters on first load
     if (!document.querySelector('.chat-starters') && !document.querySelector('.chat-feedback') && messages.children.length <= 1) {
       renderSuggestions(messages, [
         'How do I close a project?',
@@ -247,31 +246,35 @@
       return;
     }
 
-    // Process bot messages
+    // Scan all bot messages for unparsed suggestions (handles streaming)
     const botMsgs = messages.querySelectorAll('.chat-message-from-bot');
-    if (botMsgs.length === lastBotCount) return;
-    lastBotCount = botMsgs.length;
+    botMsgs.forEach((botMsg, idx) => {
+      const md = botMsg.querySelector('.chat-message-markdown');
+      if (!md || md.dataset.feedbackDone) return;
 
-    const lastBot = botMsgs[botMsgs.length - 1];
-    const md = lastBot.querySelector('.chat-message-markdown');
-    if (!md || md.dataset.processed) return;
+      // Only process once we see the <<...>> marker (response is complete)
+      const html = md.innerHTML;
+      if (!html.includes('&lt;&lt;') || !html.includes('&gt;&gt;')) return;
 
-    // Find the user message that preceded this bot response
-    const allMsgs = [...messages.querySelectorAll('.chat-message-from-bot, .chat-message-from-user')];
-    const botIdx = allMsgs.indexOf(lastBot);
-    const prevUser = botIdx > 0 ? allMsgs[botIdx - 1] : null;
-    const userText = prevUser?.querySelector('.chat-message-markdown')?.textContent || prevUser?.textContent || '';
-    const botText = md.textContent || '';
+      // Parse and render suggestions
+      const match = html.match(/&lt;&lt;(.+?)&gt;&gt;/);
+      if (match) {
+        md.innerHTML = html.replace(/&lt;&lt;(.+?)&gt;&gt;/, '').replace(/<p>\s*<\/p>\s*$/, '');
+        const suggestions = match[1].split('|').map(s => s.trim()).filter(Boolean);
+        if (suggestions.length > 0) {
+          renderSuggestions(messages, suggestions);
+        }
+      }
 
-    // Parse suggestions
-    const suggestions = parseSuggestions(md);
-    if (suggestions && suggestions.length > 0) {
-      renderSuggestions(messages, suggestions);
-    }
-
-    // Add feedback buttons
-    addFeedbackButtons(md, botMsgs.length, userText, botText);
-    md.dataset.processed = 'true';
+      // Add feedback buttons
+      const allMsgs = [...messages.querySelectorAll('.chat-message-from-bot, .chat-message-from-user')];
+      const botIdx = allMsgs.indexOf(botMsg);
+      const prevUser = botIdx > 0 ? allMsgs[botIdx - 1] : null;
+      const userText = prevUser?.querySelector('.chat-message-markdown')?.textContent || prevUser?.textContent || '';
+      const botText = md.textContent || '';
+      addFeedbackButtons(md, idx + 1, userText, botText);
+      md.dataset.feedbackDone = 'true';
+    });
   });
   observer.observe(document.body, { childList: true, subtree: true });
 </script>
