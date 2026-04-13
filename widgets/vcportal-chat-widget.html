@@ -85,6 +85,12 @@
 </style>
 <script type="module">
   import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+
+  // Get WordPress display name from admin bar before initializing chat
+  const wpUser = (document.querySelector('#wp-admin-bar-my-account .ab-item')?.textContent?.trim()?.split(',')[0])
+    || (document.querySelector('body')?.className?.match(/logged-in-as-(\S+)/)?.[1])
+    || null;
+
   createChat({
     webhookUrl: 'https://n8n.masadvise.org/webhook/vc-chatbot-stream/chat',
     mode: 'window',
@@ -101,13 +107,8 @@
         inputPlaceholder: 'Ask a question...'
       }
     },
-    metadata: {}
+    metadata: { wp_user: wpUser }
   });
-
-  // Get WordPress username from page if available
-  const wpUser = (document.querySelector('#wp-admin-bar-my-account .ab-item')?.textContent?.trim()?.split(',')[0])
-    || (document.querySelector('body')?.className?.match(/logged-in-as-(\S+)/)?.[1])
-    || null;
 
   // Get session ID from chat widget
   function getSessionId() {
