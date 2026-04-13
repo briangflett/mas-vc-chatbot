@@ -108,6 +108,13 @@ True token-by-token streaming, richer UI, full control. Upgrade path if VCs want
 
 **Why direct SQL instead of PGVector Store node?** The n8n PGVector Store node runs `CREATE EXTENSION vector` on every request, which requires azure_pg_admin role. The klaus Postgres account lacks this role. Direct SQL bypasses this issue.
 
+### vc-chatbot-feedback (ID: qEpr6ozyCjZyi57Y)
+
+**Status:** Active. Receives feedback POSTed from widget `submitFeedback()`.
+**Webhook:** POST /webhook/vc-chatbot-feedback
+**Payload:** session_id, message_index, user_message, bot_response_preview, rating (up/down/null), comment, wp_user
+**Note:** Verify this workflow is storing feedback to Postgres — storage destination unconfirmed.
+
 ### vc-chatbot-ingest (ID: d1yOknmooRczDmIc)
 
 **Status:** Deactivated. PGVector Store node fails due to azure_pg_admin role. KB was loaded via Python script instead (482 vectors from 80 documents, 2026-04-06). Workflow deactivated 2026-04-07 to remove open webhook.
@@ -208,17 +215,37 @@ LIMIT 5;
 - 482 vectors from 80 documents ingested via Python script
 - KB search tool connected in vc-chatbot-stream
 
-### Phase 4: Testing & Deployment — IN PROGRESS
+### ~~Phase 4: Testing & Deployment~~ COMPLETE (2026-04-13)
 1. ~~Refine system prompt (KB categories, citations, scope)~~ DONE (2026-04-07)
 2. ~~Test KB retrieval via n8n Chat Trigger URL~~ DONE (2026-04-07) — replaced broken PGVector Store node with direct SQL sub-workflow
-3. Embed chat widget on masadvise.org (WordPress)
-4. Soft launch with pilot VCs
+3. ~~Embed chat widget on masadvise.org (WordPress)~~ DONE (2026-04-13)
 
-### Phase 5: Polish (ongoing)
-1. Refine system prompt based on VC feedback
-2. Add more documents to knowledge base
-3. Fix or replace vc-chatbot-ingest workflow
-4. Consider upgrade to Next.js UI if needed
+### Phase 5: Pre-Launch Build — IN PROGRESS
+
+**Admin:**
+- Get Steve's approval to expense OpenRouter subscription + Azure charges (blocker for VC email)
+
+**Infrastructure:**
+- Migrate LLM from Anthropic direct → OpenRouter
+- Pass `wp_user` in chat widget `metadata` (conversation attribution)
+- Verify vc-chatbot-feedback workflow stores feedback to Postgres
+
+**Capabilities (required before VC email):**
+- CiviCRM requirements session — define full data scope; expand tools beyond current 4
+- Client research tool (CiviCRM history + web; pre-ingest vs on-demand TBD)
+- Ingest https://ai.ccndr.ca/ into KB (AI adoption guidance)
+- System prompt: brainstorming consulting approaches
+- System prompt: AI adoption guidance for clients
+
+### Phase 6: Soft Launch
+- Send VC email once Phase 5 complete and Steve's approval received
+- Structured feedback collection
+
+### Phase 7: Iteration (ongoing)
+- Refine based on VC feedback
+- VC-client matching (validate need first)
+- Access control: case-based permissions for VCs
+- Consider Next.js UI upgrade if streaming/branding needed
 
 ---
 
