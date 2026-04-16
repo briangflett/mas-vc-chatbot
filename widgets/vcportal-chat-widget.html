@@ -1,5 +1,8 @@
 <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
 <style>
+  #n8n-chat .chat-window {
+    height: min(700px, calc(100dvh - 120px)) !important;
+  }
   .chat-starters {
     display: flex;
     flex-wrap: wrap;
@@ -19,6 +22,7 @@
     max-width: 180px;
     line-height: 1.4;
     transition: border-color 0.2s, box-shadow 0.2s;
+    text-transform: none;
   }
   .chat-starters button:hover {
     border-color: #94a3b8;
@@ -86,10 +90,19 @@
 <script type="module">
   import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
 
-  // Get WordPress display name from admin bar before initializing chat
-  const wpUser = (document.querySelector('#wp-admin-bar-my-account .ab-item')?.textContent?.trim()?.split(',')[0])
-    || (document.querySelector('body')?.className?.match(/logged-in-as-(\S+)/)?.[1])
-    || null;
+  // Fetch current user's MAS email (username = Microsoft SSO login = masadvise.org email)
+  let wpUserEmail = null;
+  try {
+    const nonce = window.wpApiSettings?.nonce;
+    const resp = await fetch('/wp-json/wp/v2/users/me?context=edit', {
+      credentials: 'include',
+      headers: nonce ? { 'X-WP-Nonce': nonce } : {}
+    });
+    if (resp.ok) {
+      const u = await resp.json();
+      wpUserEmail = u.username || null;
+    }
+  } catch(e) {}
 
   createChat({
     webhookUrl: 'https://n8n.masadvise.org/webhook/vc-chatbot-stream/chat',
@@ -107,7 +120,7 @@
         inputPlaceholder: 'Ask a question...'
       }
     },
-    metadata: { wp_user: wpUser }
+    metadata: { wp_user_email: wpUserEmail }
   });
 
   // Get session ID from chat widget
@@ -140,7 +153,7 @@
         bot_response_preview: data.botResponse?.substring(0, 500),
         rating: data.rating || null,
         comment: data.comment || null,
-        wp_user: wpUser
+        wp_user_email: wpUserEmail
       })
     }).catch(() => {});
   }
@@ -205,7 +218,7 @@
     botMsgEl.appendChild(fb);
   }
 
-  function renderSuggestions(container, suggestions) {
+  function renderSuggestions(container, suggestions, scrollToTop = false) {
     const existing = container.querySelectorAll('.chat-starters');
     existing.forEach(el => el.remove());
     const div = document.createElement('div');
@@ -220,7 +233,7 @@
       div.appendChild(btn);
     });
     container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
+    container.scrollTop = scrollToTop ? 0 : container.scrollHeight;
   }
 
   // Poll for new bot messages and process them.
@@ -238,11 +251,11 @@
     if (!initialStartersShown && messages.children.length <= 1 && !document.querySelector('.chat-feedback')) {
       initialStartersShown = true;
       renderSuggestions(messages, [
-        'How do I close a project?',
-        'Show me unassigned cases',
-        'What is the RCS form?',
-        'Find a volunteer coordinator'
-      ]);
+        "What are a VC's responsibilities",
+        "How do I close a project",
+        "What service requests need a VC",
+        'How can you help me with a project'
+      ], true);
       return;
     }
 
