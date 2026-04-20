@@ -1,6 +1,6 @@
 # Project Close Procedure
 
-Source: VC Support Centre (Google Drive)
+Source: https://masadvise.sharepoint.com/:w:/s/ManagementAdvisoryServiceofOntario/IQBGOiiLH1cVTKYYecvT2l42AX0xSup78Kt8uNRQAUcUboI
 
 Initiating a MAS Project Close Procedure
 

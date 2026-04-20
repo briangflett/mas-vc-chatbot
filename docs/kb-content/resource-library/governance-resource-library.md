@@ -1,6 +1,6 @@
 # Governance Resource Library Guide
 
-Source: MAS Resource Library (SharePoint)
+Source: https://masadvise.sharepoint.com/:w:/s/ManagementAdvisoryServiceofOntario/IQBEUzeeQwVrSZPVQem9a5brAbHVsJBaPp2A-q3-Ekexg0I
 
 Governance Resource Library
 

@@ -1,6 +1,6 @@
 # Information Technology Resource Library Guide
 
-Source: MAS Resource Library (SharePoint)
+Source: https://masadvise.sharepoint.com/:w:/s/ManagementAdvisoryServiceofOntario/IQDFQ4C1JclYTYQQ0u-GSrCtAZdLGS-PuduEJv3OVpt3LiY
 
 IT Resource Library
 

@@ -1,6 +1,6 @@
 # Fundraising Resource Library Guide
 
-Source: MAS Resource Library (SharePoint)
+Source: https://masadvise.sharepoint.com/:w:/s/ManagementAdvisoryServiceofOntario/IQBnd6GoyGE5Q4gccOSE_HLlAXz_zWfyppgFd4qeOiIROfc
 
 FUNDRAISING RESOURCE LIBRARY
 

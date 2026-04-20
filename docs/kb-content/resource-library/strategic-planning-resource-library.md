@@ -1,6 +1,6 @@
 # Strategic Planning Resource Library Guide
 
-Source: MAS Resource Library (SharePoint)
+Source: https://masadvise.sharepoint.com/:w:/s/ManagementAdvisoryServiceofOntario/IQBhwL0kG7owQ7t55s8ibKSrAUXpIP0TZhOFqry50xLmefs
 
 Strategic Planning Resource Library
 

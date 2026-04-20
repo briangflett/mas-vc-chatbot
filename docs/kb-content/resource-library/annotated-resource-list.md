@@ -1,6 +1,6 @@
 # MAS Annotated Resource List
 
-Source: MAS Resource Library (SharePoint)
+Source: https://masadvise.sharepoint.com/:w:/s/ManagementAdvisoryServiceofOntario/IQB_hcQ7LRbnTrFo-_nAyWo2Aa694t4alw9nz84BWuZ4Nuw
 
 MAS Annotated Resource List for Volunteer Consultants
 

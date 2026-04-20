@@ -1,6 +1,6 @@
 # MAS Volunteer Coordinator Handbook
 
-Source: VC Support Centre (Google Drive)
+Source: https://masadvise.sharepoint.com/:w:/s/ManagementAdvisoryServiceofOntario/IQCKCNWeuPcyQ4CQBdh3KQuPAQPhCX8xG3z67UwVbl7y260
 
 HANDBOOK FOR
 

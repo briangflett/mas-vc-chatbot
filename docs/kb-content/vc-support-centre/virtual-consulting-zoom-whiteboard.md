@@ -1,6 +1,6 @@
 # Virtual Consulting - Using Zoom Whiteboard
 
-Source: VC Support Centre (Google Drive)
+Source: https://masadvise.sharepoint.com/:w:/s/ManagementAdvisoryServiceofOntario/IQBov1RzqlFOQb58fIBRB5hNAele-0p6PaFFBR0A4aEkc1I
 
 MAS Strategic Planning
 

@@ -1,6 +1,6 @@
 # Full Self-Assessment Survey (SAS)
 
-Source: VC Support Centre (Google Drive)
+Source: https://masadvise.sharepoint.com/:w:/s/ManagementAdvisoryServiceofOntario/IQBGBK6EPE8tTYLF1rgxIj-oAV8_i6sBdga0rAMP5GW1-AY
 
 Not-for-profit Organization Self-Assessment Survey
 

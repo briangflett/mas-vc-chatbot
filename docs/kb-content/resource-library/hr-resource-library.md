@@ -1,6 +1,6 @@
 # Human Resources and Coaching Resource Library Guide
 
-Source: MAS Resource Library (SharePoint)
+Source: https://masadvise.sharepoint.com/:w:/s/ManagementAdvisoryServiceofOntario/IQAJNxAIWkqzR5Rdsgdx9stpASb0uvo1GrRBPRr_SjoliKw
 
 HR Resource Library
 

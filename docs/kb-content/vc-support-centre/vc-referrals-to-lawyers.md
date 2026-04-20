@@ -1,6 +1,6 @@
 # MAS VC Referrals to Lawyers Guidelines
 
-Source: VC Support Centre (Google Drive)
+Source: https://masadvise.sharepoint.com/:w:/s/ManagementAdvisoryServiceofOntario/IQCngN4fhQALRZDQSd_zIQP2AV45yKB2iHDDDUuh_MlDego
 
 MAS VC Referrals to Lawyers.
 

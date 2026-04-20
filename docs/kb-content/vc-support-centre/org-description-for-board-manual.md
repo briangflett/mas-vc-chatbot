@@ -1,6 +1,6 @@
 # MAS Organization Description for Board Manual
 
-Source: VC Support Centre (Google Drive)
+Source: https://masadvise.sharepoint.com/:w:/s/ManagementAdvisoryServiceofOntario/IQDu7w5ONFy3RLum1wU1FPS7AfzFa8I-8xgK1UusjC2KlMk
 
 Management Advisory Service: 
 
