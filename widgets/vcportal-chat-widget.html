@@ -86,12 +86,23 @@
     color: #94a3b8;
     padding: 4px 0;
   }
+  .chat-message-markdown a {
+    color: #2563eb !important;
+    text-decoration: underline !important;
+  }
+  .chat-message-markdown a:hover {
+    color: #1d4ed8 !important;
+    text-decoration: underline !important;
+  }
 </style>
 <script type="module">
   import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
 
-  // Fetch current user's MAS email (username = Microsoft SSO login = masadvise.org email)
-  let wpUserEmail = null;
+  // Fetch current user's WP identity packet
+  //   - id: stable immutable WP user ID (best join key)
+  //   - email: username from WP = Microsoft SSO login = masadvise.org email
+  //   - display_name: for UI/triage only, not an identifier
+  let wpUser = { id: null, email: null, display_name: null };
   try {
     const nonce = window.wpApiSettings?.nonce;
     const resp = await fetch('/wp-json/wp/v2/users/me?context=edit', {
@@ -100,7 +111,11 @@
     });
     if (resp.ok) {
       const u = await resp.json();
-      wpUserEmail = u.username || null;
+      wpUser = {
+        id: u.id || null,
+        email: u.username || null,
+        display_name: u.name || null
+      };
     }
   } catch(e) {}
 
@@ -120,7 +135,11 @@
         inputPlaceholder: 'Ask a question...'
       }
     },
-    metadata: { wp_user_email: wpUserEmail }
+    metadata: {
+      wp_user_id: wpUser.id,
+      wp_user_email: wpUser.email,
+      wp_display_name: wpUser.display_name
+    }
   });
 
   // Get session ID from chat widget
@@ -153,7 +172,9 @@
         bot_response_preview: data.botResponse?.substring(0, 500),
         rating: data.rating || null,
         comment: data.comment || null,
-        wp_user_email: wpUserEmail
+        wp_user_id: wpUser.id,
+        wp_user_email: wpUser.email,
+        wp_display_name: wpUser.display_name
       })
     }).catch(() => {});
   }
@@ -284,6 +305,12 @@
           renderSuggestions(messages, suggestions);
         }
       }
+
+      // Open links in a new tab so clicking doesn't navigate away from the chat
+      md.querySelectorAll('a[href]').forEach(a => {
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      });
 
       // Add feedback buttons
       const allMsgs = [...messages.querySelectorAll('.chat-message-from-bot, .chat-message-from-user')];
