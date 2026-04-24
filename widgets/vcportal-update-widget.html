@@ -1,0 +1,417 @@
+<style>
+  .mas-update-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 100000;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 40px 16px;
+  }
+  .mas-update-overlay.open { display: flex; }
+  .mas-update-modal {
+    background: #fff;
+    color: #0f172a;
+    width: min(560px, 100%);
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+    padding: 24px 28px 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .mas-update-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  .mas-update-header h2 {
+    margin: 0;
+    font-size: 18px;
+    color: #0f172a;
+  }
+  .mas-update-header p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: #64748b;
+  }
+  .mas-update-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+  .mas-update-close:hover { color: #475569; }
+  .mas-update-form label {
+    display: block;
+    font-weight: 600;
+    color: #334155;
+    margin: 12px 0 4px;
+  }
+  .mas-update-form .mas-hint {
+    font-weight: 400;
+    font-size: 12px;
+    color: #64748b;
+    margin-left: 6px;
+  }
+  .mas-update-form input[type="email"],
+  .mas-update-form select,
+  .mas-update-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #0f172a;
+    background: #fff;
+  }
+  .mas-update-form input:focus,
+  .mas-update-form select:focus,
+  .mas-update-form textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  }
+  .mas-update-form textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+  .mas-areas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 4px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #f8fafc;
+  }
+  .mas-areas label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 400;
+    margin: 0;
+    color: #334155;
+    cursor: pointer;
+  }
+  .mas-share {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: #f1f5f9;
+    border-radius: 8px;
+  }
+  .mas-share label {
+    margin: 0;
+    font-weight: 500;
+    flex: 1;
+  }
+  .mas-update-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px solid #e2e8f0;
+  }
+  .mas-update-actions button {
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .mas-cancel {
+    background: #fff;
+    border-color: #cbd5e1;
+    color: #475569;
+  }
+  .mas-cancel:hover { background: #f1f5f9; }
+  .mas-save {
+    background: #3b82f6;
+    color: #fff;
+  }
+  .mas-save:hover { background: #2563eb; }
+  .mas-save:disabled { background: #94a3b8; cursor: not-allowed; }
+  .mas-status {
+    font-size: 13px;
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+  }
+  .mas-status.info { background: #eff6ff; color: #1d4ed8; }
+  .mas-status.error { background: #fef2f2; color: #b91c1c; }
+  .mas-status.success { background: #ecfdf5; color: #047857; }
+</style>
+
+<div class="mas-update-overlay" id="mas-update-overlay" role="dialog" aria-modal="true" aria-labelledby="mas-update-title">
+  <div class="mas-update-modal">
+    <div class="mas-update-header">
+      <div>
+        <h2 id="mas-update-title">Update your VC info</h2>
+        <p>Changes are saved to CiviCRM and visible to the MAS AI Assistant.</p>
+      </div>
+      <button type="button" class="mas-update-close" id="mas-update-close" aria-label="Close">&times;</button>
+    </div>
+
+    <form class="mas-update-form" id="mas-update-form" novalidate>
+      <div id="mas-update-status" class="mas-status info" style="display:none;"></div>
+
+      <label for="mas-email">Personal email <span class="mas-hint">(your Primary email in CiviCRM)</span></label>
+      <input type="email" id="mas-email" name="email" autocomplete="email" required>
+
+      <label for="mas-primary">Primary area of expertise</label>
+      <select id="mas-primary" name="primary_expertise">
+        <option value="">- select -</option>
+      </select>
+
+      <label>Areas of expertise <span class="mas-hint">(select all that apply)</span></label>
+      <div class="mas-areas" id="mas-areas"></div>
+
+      <label for="mas-skills">Skills <span class="mas-hint">(comma-separated list)</span></label>
+      <textarea id="mas-skills" name="skills" maxlength="4000" placeholder="e.g. strategic planning, fundraising, non-profit governance"></textarea>
+
+      <div class="mas-share">
+        <label for="mas-share-toggle">Share my email with other VCs</label>
+        <input type="checkbox" id="mas-share-toggle" name="share_email">
+      </div>
+
+      <div class="mas-update-actions">
+        <button type="button" class="mas-cancel" id="mas-update-cancel">Cancel</button>
+        <button type="submit" class="mas-save" id="mas-update-save">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  const WEBHOOK = 'https://n8n.masadvise.org/webhook/vc-update-profile';
+  const EXPERTISE = [
+    ['AI', 'AI'],
+    ['BPI', 'Business Process Improvement'],
+    ['COMM', 'Comm/PR'],
+    ['FIN', 'Finance/Acct'],
+    ['FUND', 'Fund Raising'],
+    ['GEN', 'General Consulting'],
+    ['GOVERN', 'Governance/Board'],
+    ['HR', 'HR'],
+    ['IT', 'IT'],
+    ['MRSCH', 'Market Research'],
+    ['MRKT', 'Marketing'],
+    ['MENT', 'Mentoring'],
+    ['OBPE', 'OBPE'],
+    ['ADM', 'Org/Admin'],
+    ['SPEAK', 'Speakers'],
+    ['STRAT', 'Planning']
+  ];
+
+  const overlay = document.getElementById('mas-update-overlay');
+  // Portal the overlay to <body> so it escapes any hidden Elementor container
+  // (the widget can live anywhere on the page; modal renders over everything).
+  if (overlay && overlay.parentElement !== document.body) {
+    document.body.appendChild(overlay);
+  }
+  const form = document.getElementById('mas-update-form');
+  const emailEl = document.getElementById('mas-email');
+  const primaryEl = document.getElementById('mas-primary');
+  const areasEl = document.getElementById('mas-areas');
+  const skillsEl = document.getElementById('mas-skills');
+  const shareEl = document.getElementById('mas-share-toggle');
+  const statusEl = document.getElementById('mas-update-status');
+  const saveBtn = document.getElementById('mas-update-save');
+  const cancelBtn = document.getElementById('mas-update-cancel');
+  const closeBtn = document.getElementById('mas-update-close');
+
+  // Render expertise options into primary dropdown and areas checkboxes
+  EXPERTISE.forEach(([val, label]) => {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = label;
+    primaryEl.appendChild(opt);
+
+    const wrap = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = val;
+    cb.name = 'areas_of_expertise';
+    const span = document.createElement('span');
+    span.textContent = label;
+    wrap.appendChild(cb);
+    wrap.appendChild(span);
+    areasEl.appendChild(wrap);
+  });
+
+  let wpUser = null;
+  let contactId = null;
+
+  function showStatus(msg, kind) {
+    statusEl.textContent = msg;
+    statusEl.className = 'mas-status ' + (kind || 'info');
+    statusEl.style.display = msg ? 'block' : 'none';
+  }
+
+  function setFormEnabled(enabled) {
+    form.querySelectorAll('input, select, textarea, button').forEach(el => { el.disabled = !enabled; });
+  }
+
+  async function fetchWpUser() {
+    const nonce = window.wpApiSettings && window.wpApiSettings.nonce;
+    const resp = await fetch('/wp-json/wp/v2/users/me?context=edit', {
+      credentials: 'include',
+      headers: nonce ? { 'X-WP-Nonce': nonce } : {}
+    });
+    if (!resp.ok) throw new Error('wp-user-unavailable');
+    return resp.json();
+  }
+
+  async function cacheContactIdInWp(cid) {
+    const nonce = window.wpApiSettings && window.wpApiSettings.nonce;
+    await fetch('/wp-json/mas/v1/users/me/civicrm-contact-id', {
+      method: 'POST',
+      credentials: 'include',
+      headers: Object.assign(
+        { 'Content-Type': 'application/json' },
+        nonce ? { 'X-WP-Nonce': nonce } : {}
+      ),
+      body: JSON.stringify({ contact_id: cid })
+    }).catch(() => {});
+  }
+
+  async function callWebhook(payload) {
+    const resp = await fetch(WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) throw new Error('webhook-' + resp.status);
+    return resp.json();
+  }
+
+  async function resolveContactId() {
+    const r = await callWebhook({
+      op: 'resolve',
+      wp_user_id: wpUser.id,
+      wp_username: wpUser.username || wpUser.email
+    });
+    if (!r.success || !r.contact_id) throw new Error('no-civicrm-match');
+    await cacheContactIdInWp(r.contact_id);
+    return r.contact_id;
+  }
+
+  function populate(data) {
+    emailEl.value = data.email || '';
+    primaryEl.value = data.primary_expertise || '';
+    skillsEl.value = data.skills || '';
+    shareEl.checked = !!data.share_email;
+    const selected = new Set(data.areas_of_expertise || []);
+    areasEl.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      cb.checked = selected.has(cb.value);
+    });
+  }
+
+  async function openModal() {
+    overlay.classList.add('open');
+    setFormEnabled(false);
+    showStatus('Loading your info…', 'info');
+    try {
+      if (!wpUser) wpUser = await fetchWpUser();
+      if (!contactId) contactId = wpUser.civicrm_contact_id || null;
+      if (!contactId) contactId = await resolveContactId();
+      const data = await callWebhook({ op: 'get', contact_id: contactId });
+      if (!data.success) throw new Error(data.error || 'load-failed');
+      populate(data);
+      showStatus('', '');
+      setFormEnabled(true);
+      emailEl.focus();
+    } catch (e) {
+      showStatus(
+        'Could not load your info (' + e.message + '). Contact brian.flett@masadvise.org for help.',
+        'error'
+      );
+    }
+  }
+
+  function closeModal() {
+    overlay.classList.remove('open');
+    showStatus('', '');
+  }
+
+  function collect() {
+    const selectedAreas = [];
+    areasEl.querySelectorAll('input[type=checkbox]:checked').forEach(cb => selectedAreas.push(cb.value));
+    return {
+      email: emailEl.value.trim(),
+      primary_expertise: primaryEl.value || null,
+      areas_of_expertise: selectedAreas,
+      skills: skillsEl.value,
+      share_email: shareEl.checked
+    };
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!contactId) return;
+    const payload = Object.assign({ op: 'save', contact_id: contactId }, collect());
+    if (!payload.email || !/^\S+@\S+\.\S+$/.test(payload.email)) {
+      showStatus('Please enter a valid email address.', 'error');
+      emailEl.focus();
+      return;
+    }
+    setFormEnabled(false);
+    showStatus('Saving…', 'info');
+    try {
+      const r = await callWebhook(payload);
+      if (!r.success) throw new Error(r.error || 'save-failed');
+      showStatus('Saved. Thanks!', 'success');
+      setTimeout(closeModal, 1200);
+    } catch (err) {
+      showStatus('Save failed (' + err.message + '). Please try again.', 'error');
+      setFormEnabled(true);
+    }
+  });
+
+  cancelBtn.addEventListener('click', closeModal);
+  closeBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+  });
+
+  // Hook the "Update your info" button: any <a href="#update-my-info">.
+  // Strip target="_blank" so the hash doesn't open the modal in a new tab.
+  function harden() {
+    document.querySelectorAll('a[href$="#update-my-info"]').forEach(a => {
+      a.removeAttribute('target');
+      a.removeAttribute('rel');
+    });
+  }
+  harden();
+  // Elementor/ElementsKit can re-render after DOM ready; re-apply once.
+  window.addEventListener('load', harden);
+
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[href$="#update-my-info"]');
+    if (!a) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openModal();
+  }, true);  // capture phase — runs before any ElementsKit handler
+})();
+</script>
