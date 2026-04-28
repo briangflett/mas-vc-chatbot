@@ -275,7 +275,10 @@
       credentials: 'include',
       headers: nonce ? { 'X-WP-Nonce': nonce } : {}
     });
-    if (!resp.ok) throw new Error('wp-user-unavailable');
+    if (!resp.ok) {
+      const detail = nonce ? resp.status : resp.status + '-no-nonce';
+      throw new Error('wp-user-' + detail);
+    }
     return resp.json();
   }
 
