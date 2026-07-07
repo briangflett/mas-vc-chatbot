@@ -6,7 +6,7 @@ This app replaces the n8n implementation of the VC chatbot. Cutover is **paralle
 
 **In:** the core chatbot — stream agent (system prompt + Haiku 4.5), the 5 CiviCRM tools with the redaction-based access-control layer, KB hybrid retrieval, turn logging to `vc_chatbot_conversations`, and **feedback capture** (thumbs/comment → `app/api/feedback` → `vc_chatbot_feedback`; verified live).
 
-**Deferred fast-follow (still on n8n after this pass):** `vc-update-profile` (the self-service "Update Info" widget). Keeps working on n8n until separately ported.
+**Also ported:** `vc-update-profile` (the self-service "Update Info" widget) → `app/api/profile` (`resolve`/`get`/`save` ops, 1:1 from the n8n Code nodes). All three verified against live CiviCRM, incl. an idempotent `save` round-trip. The only remaining n8n surface is the widget still pointing at the old webhook until the Elementor Block-2 swap (step 4b).
 
 ## 1. Repo / org placement (Brian — org admin)
 
@@ -38,10 +38,16 @@ This app replaces the n8n implementation of the VC chatbot. Cutover is **paralle
 - [ ] Verify identity handshake: the WP page's logged-in VC gets `[Logged-in VC: Contact ID …]` (visible in the app header showing their name).
 - **Rollback:** re-point the Elementor widget back to the old n8n embed. The n8n workflows are untouched until step 5.
 
+## 4b. Swap the "Update your info" widget (Brian)
+
+- [ ] Replace the Elementor Block-2 HTML with the updated `widgets/vcportal-update-widget.html` (its `WEBHOOK` now points at `https://mas-vc-chatbot.vercel.app/api/profile`).
+- [ ] Open the modal as a logged-in VC: confirm it loads current values (`get`), then Save and confirm "Saved. Thanks!" (`save`). If the VC has no cached `civicrm_contact_id`, the `resolve` op runs first.
+- **Rollback:** revert Block-2 to the n8n webhook URL. `vc-update-profile` stays active until step 5.
+
 ## 5. Retire n8n (only after validation holds)
 
 - [ ] Disable the n8n workflows listed in `CLAUDE.md` (§ "The n8n workflows").
-- [ ] Leave `vc-update-profile` **active** until its fast-follow ships (`vc-chatbot-feedback` can be disabled — feedback is now captured in-code).
+- [ ] `vc-update-profile` can be disabled once Block-2 (step 4b) is swapped and verified. `vc-chatbot-feedback` can be disabled now — feedback is captured in-code.
 - [ ] Note in Klaus memory `project_klaus_off_n8n` that the mas-vc-chatbot sibling migration (handoff #634) is complete for the core.
 
 ## Notes
