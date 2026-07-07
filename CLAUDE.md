@@ -1,4 +1,4 @@
-# MAS VC Chatbot - Claude Guide
+# MAS VC Chatbot — Claude Guide
 
 ## CRITICAL: Security
 
@@ -10,110 +10,77 @@ Real secrets ONLY in `.env.local` (git-ignored). Reference: @/home/brian/SECURIT
 ## Session Lifecycle
 
 - **Start**: `/bootstrap` (loads Klaus context, checks pending handoffs)
-- **End**: `/wrapup` (logs summary to Postgres, handles handoffs, checks git)
+- **End**: `/wrapup`
 
 **Project-specific context** (read at session start):
-1. `docs/PROJECT_SPEC.md` — project design specification
-2. BrianPKM `1-Projects/mas-vc-chatbot-decisions.md` — ADRs (add new decisions here)
+1. `docs/PROJECT_SPEC.md` — original design spec (n8n-era; historical)
+2. `docs/CUTOVER.md` — the off-n8n cutover checklist (current)
+3. BrianPKM `4-Archive/mas-vc-chatbot-decisions.md` — ADRs (ADR-012 = off-n8n)
 
 ---
 
 ## Project Overview
 
-**Purpose**: AI chatbot for MAS Volunteer Coordinators (~50 users) to search CiviCRM contacts/cases and query a knowledge base about MAS processes.
-**Status**: Fully functional. CiviCRM tools + KB retrieval working (482 vectors, 80 docs). Tested 2026-04-07. Next: embed widget on masadvise.org + soft launch.
-**Deployment**: n8n Chat Trigger widget embedded on masadvise.org (WordPress).
-**Working Directory**: `/home/brian/workspace/development/mas-vc-chatbot`
+**Purpose**: AI chatbot for MAS Volunteer Coordinators (~30 active on the VC Portal) to search CiviCRM contacts/cases and query a MAS knowledge base.
+**Status**: **Migrated off n8n → code-first Next.js app** (this repo). The n8n stack stays live until parallel-run validation completes, then is disabled at cutover.
+**Deployment**: Standalone Next.js app on Vercel; embedded on masadvise.org/vcportal via an iframe (`widgets/vcportal-chat-embed-v2.html`).
 
 ---
 
-## Architecture
+## Architecture (code-first)
 
 ```
-n8n Chat Trigger (public hosted) -> AI Agent -> [Streaming Response]
-                                      |
-                            +-- Anthropic Claude Sonnet 4 (LLM)
-                            +-- Window Buffer Memory (10 messages)
-                            +-- 4 Workflow Tools -> vc-chatbot-civicrm-sub -> CiviCRM API4
-                            +-- 1 KB Search Tool -> PGVector Store (pgvector on Azure PostgreSQL)
+WordPress (masadvise.org/vcportal)
+  └─ iframe embed (widgets/vcportal-chat-embed-v2.html) — posts wp_user identity
+       └─ Next.js app (this repo, Vercel)
+            ├─ app/page.tsx           chat UI (Vercel AI SDK useChat, streaming, <<suggestion>> chips)
+            └─ app/api/chat/route.ts  agent endpoint (CORS, identity resolve, tool loop, turn logging)
+                 └─ lib/
+                    ├─ model.ts       provider selector (Anthropic | OpenRouter), Haiku 4.5 default
+                    ├─ prompt.ts      verbatim system prompt (ported from live n8n agent)
+                    ├─ identity.ts    resolve VC CiviCRM contact ID (fast path / email lookup)
+                    ├─ civicrm.ts     API4 client + redaction-based access control
+                    ├─ tools.ts       5 CiviCRM tools + search_knowledge_base
+                    ├─ kb.ts          hybrid vector+BM25 (RRF) retrieval over kb_chunks/kb_documents
+                    ├─ embeddings.ts  OpenAI text-embedding-3-small
+                    ├─ db.ts          pg pool → shared Azure Postgres (db `klaus`)
+                    └─ logging.ts     turn logging → vc_chatbot_conversations
 ```
 
-**All business logic lives in n8n.** This repo contains project documentation, KB content, and ingestion scripts.
+**Shared Azure Postgres** (`mas-n8n-postgress-db…`, db `klaus`) — same instance as Klaus. We READ the KB pool tables (`kb_chunks`, `kb_documents`, `kb_document_kbs`; KB scope `kb_id='mas_vc'`, 446 chunks) and WRITE our own (`vc_chatbot_conversations`, `vc_chatbot_feedback`). Never mutate KB tables.
 
-**Key constraint**: `httpRequestWithAuthentication()` is NOT supported in Code Tool nodes. Use Workflow Tool + sub-workflow pattern for any tool that needs credentials. See ADR-002 in BrianPKM decisions.
+### Access control (redaction, not query restriction)
 
----
-
-## n8n Workflows
-
-| Workflow | ID | Status | Purpose |
-|----------|----|--------|---------|
-| vc-chatbot-stream | O0phZvFcYNr7BGis | Active | Main chat: Chat Trigger + AI Agent + tools + memory |
-| vc-chatbot-civicrm-sub | nmVIws1rIVYhpgMi | Active | Sub-workflow: routes CiviCRM tool calls to API4 |
-| vc-chatbot-kb-sub | TTPXaeNi7SxWReM4 | Active | Sub-workflow: KB retrieval via OpenAI embeddings + direct SQL |
-| vc-chatbot-ingest | d1yOknmooRczDmIc | Deactivated | KB ingestion — PGVector Store node fails (azure_pg_admin). Python script used instead. |
-| civicrm-tool-handler | KKik67GlUddpDQED | Active | Standalone CiviCRM API wrapper with eval framework |
-
-**n8n instance**: https://n8n.masadvise.org
+CiviCRM queries run **unrestricted** (`checkPermissions:false` — trusted service account). `lib/civicrm.ts:getAuthContext()` resolves the VC's authorised contact/org IDs (clients on their own cases via the `"Case Coordinator is"` relation, plus those orgs and client reps); the per-tool redactors in `lib/tools.ts` NULL email/phone on out-of-scope rows. VC emails additionally pass through on consent (`MAS_Rep.Share_Email_with_VC_s`).
 
 ---
 
-## CiviCRM Tools
+## Conventions
 
-| Tool | What it does |
-|------|-------------|
-| search_contacts | Search by name/email/org with filter_type (all/active_vcs/org_employees) |
-| get_contact | Full contact details by contactId |
-| search_cases | Search cases by VC, org, status, unassigned flag |
-| get_case | Full case details with custom fields by caseId |
+- Chat model: **Haiku 4.5** by default (`CHAT_MODEL`), matching the live n8n stream. Provider via `LLM_PROVIDER` (`anthropic` default, `openrouter` alt).
+- Dev server: `pnpm dev` on port 3005.
+- SQL bindings are parameterized (the n8n KB sub string-interpolated; the port does not).
+- Pure logic (`lib/suggestions.ts`, `lib/prompt.ts`, redaction predicates) is unit-tested (`tests/unit.test.ts`).
 
-**API pattern**: Code node builds params -> stringify -> POST to `/civicrm/ajax/api4/{entity}/{action}` (form-urlencoded). Uses CiviCRM Custom Auth credential (ID: WIv1YM35QT3gS3E9).
+```bash
+pnpm dev            # local (http://localhost:3005)
+pnpm build          # production build (runs the real typecheck)
+pnpm lint           # tsc --noEmit
+pnpm test           # vitest
+node --env-file=.env.local --import tsx scripts/verify-kb.ts "question"   # KB smoke test
+```
 
----
+### Environment
 
-## Credentials (in n8n)
-
-| Credential | ID | Used By |
-|-----------|-----|---------|
-| CiviCRM Custom Auth | WIv1YM35QT3gS3E9 | civicrm-tool-handler, vc-chatbot-civicrm-sub |
-| Anthropic API | 7UPj62kj2GRdAC8j | vc-chatbot-stream |
-| OpenAI API | (check n8n) | Embeddings for KB ingestion and retrieval |
-| PostgreSQL (Azure) | (check n8n) | Knowledge base vector store |
+See `.env.example` (authoritative). Deploy prereqs for cutover live in `docs/CUTOVER.md` — notably the CiviCRM service-account keys (`CIVICRM_API_KEY` / `CIVICRM_SITE_KEY`) that came from the n8n "CiviCRM Custom Auth" credential.
 
 ---
 
-## Key Files
+## The n8n workflows (retire at cutover)
 
-**Documentation** (`docs/`):
-- `PROJECT_SPEC.md` — Project design spec (architecture, schema, roadmap, credentials)
-- `CIVICRM_TOOLS.md` — CiviCRM tool specifications
-- `CIVICRM_API_V4_REFERENCE.md` — CiviCRM API4 patterns
-- `claude-ai-project-instructions.md` — claude.ai web project pointer
-
-**KB content** (`docs/kb-content/`):
-- Authored knowledge base documents for ingestion into pgvector
-
-**Related paths**:
-- n8n workflow exports: `/home/brian/workspace/workflows/personal/mas-vc-chatbot/workflows/`
-- Sync script: `/home/brian/workspace/workflows/personal/mas-vc-chatbot/scripts/sync-workflows.sh`
-- CiviCRM API4 protocol: `/home/brian/workspace/claude/context/mas-claude-context/claude-code/global/protocols/api4.md`
+Historical, on n8n.masadvise.org — disable only after parallel-run validation:
+`vc-chatbot-stream` (O0phZvFcYNr7BGis), `vc-chatbot-civicrm-sub` (nmVIws1rIVYhpgMi), `kb-retrieval-sub` (eLwfr4GbXtM1gCmJ), `vc-chatbot-feedback` (qEpr6ozyCjZyi57Y), `vc-chatbot-log-turn` (DeJuZrPKFwIHBEey), `vc-update-profile` (5OarmqbQLcSJa6zU), plus eval scaffolds. Feedback capture + the vc-update-profile self-service flow are **deferred fast-follows** (not in this pass).
 
 ---
 
-## Tool Selection
-
-| Tool | Use for |
-|------|---------|
-| **Claude Code CLI** | Edit files, git operations, testing |
-| **Web interface** (claude.ai) | n8n MCP tools, GitHub access, workflow design |
-| **n8n Web UI** | Visual workflow editing, credential management, execution logs |
-
----
-
-## Klaus Integration
-
-Klaus capabilities are provided via the globally available `klaus-workflows`, `bootstrap`, and `wrapup` skills.
-
----
-
-**Last Updated**: 2026-04-07
+**Last Updated**: 2026-07-06
