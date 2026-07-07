@@ -4,9 +4,9 @@ This app replaces the n8n implementation of the VC chatbot. Cutover is **paralle
 
 ## Scope of this migration pass
 
-**In:** the core chatbot — stream agent (system prompt + Haiku 4.5), the 5 CiviCRM tools with the redaction-based access-control layer, and KB hybrid retrieval. Turn logging to `vc_chatbot_conversations` is wired in.
+**In:** the core chatbot — stream agent (system prompt + Haiku 4.5), the 5 CiviCRM tools with the redaction-based access-control layer, KB hybrid retrieval, turn logging to `vc_chatbot_conversations`, and **feedback capture** (thumbs/comment → `app/api/feedback` → `vc_chatbot_feedback`; verified live).
 
-**Deferred fast-follows (still on n8n after this pass):** `vc-chatbot-feedback` (thumbs/comment capture) and `vc-update-profile` (the self-service "Update Info" widget). These keep working on n8n until separately ported.
+**Deferred fast-follow (still on n8n after this pass):** `vc-update-profile` (the self-service "Update Info" widget). Keeps working on n8n until separately ported.
 
 ## 1. Repo / org placement (Brian — org admin)
 
@@ -41,7 +41,7 @@ This app replaces the n8n implementation of the VC chatbot. Cutover is **paralle
 ## 5. Retire n8n (only after validation holds)
 
 - [ ] Disable the n8n workflows listed in `CLAUDE.md` (§ "The n8n workflows").
-- [ ] Leave `vc-chatbot-feedback` + `vc-update-profile` **active** until their fast-follows ship.
+- [ ] Leave `vc-update-profile` **active** until its fast-follow ships (`vc-chatbot-feedback` can be disabled — feedback is now captured in-code).
 - [ ] Note in Klaus memory `project_klaus_off_n8n` that the mas-vc-chatbot sibling migration (handoff #634) is complete for the core.
 
 ## Notes

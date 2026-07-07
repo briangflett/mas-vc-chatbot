@@ -79,7 +79,7 @@ See `.env.example` (authoritative). Deploy prereqs for cutover live in `docs/CUT
 ## The n8n workflows (retire at cutover)
 
 Historical, on n8n.masadvise.org — disable only after parallel-run validation:
-`vc-chatbot-stream` (O0phZvFcYNr7BGis), `vc-chatbot-civicrm-sub` (nmVIws1rIVYhpgMi), `kb-retrieval-sub` (eLwfr4GbXtM1gCmJ), `vc-chatbot-feedback` (qEpr6ozyCjZyi57Y), `vc-chatbot-log-turn` (DeJuZrPKFwIHBEey), `vc-update-profile` (5OarmqbQLcSJa6zU), plus eval scaffolds. Feedback capture + the vc-update-profile self-service flow are **deferred fast-follows** (not in this pass).
+`vc-chatbot-stream` (O0phZvFcYNr7BGis), `vc-chatbot-civicrm-sub` (nmVIws1rIVYhpgMi), `kb-retrieval-sub` (eLwfr4GbXtM1gCmJ), `vc-chatbot-feedback` (qEpr6ozyCjZyi57Y), `vc-chatbot-log-turn` (DeJuZrPKFwIHBEey), `vc-update-profile` (5OarmqbQLcSJa6zU), plus eval scaffolds. Feedback capture is now in-code (`app/api/feedback` → `vc_chatbot_feedback`), so `vc-chatbot-feedback` retires with the rest. The **vc-update-profile self-service flow is the one remaining deferred fast-follow** (not in this pass).
 
 ---
 
