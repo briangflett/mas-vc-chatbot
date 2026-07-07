@@ -35,7 +35,7 @@ function messageText(m: UIMessage): string {
 export default function Page() {
   const [identity, setIdentity] = useState<Identity>({});
   const [input, setInput] = useState("");
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sessionId = useMemo(
     () => (typeof crypto !== "undefined" ? crypto.randomUUID() : `s-${Date.now()}`),
@@ -58,6 +58,12 @@ export default function Page() {
     window.parent?.postMessage({ type: "mas-vc-ready" }, "*");
     return () => window.removeEventListener("message", onMessage);
   }, []);
+
+  // Tell the embedding page whether the panel is open, so it can resize the
+  // iframe (collapsed = just the toggle, expanded = the full panel).
+  useEffect(() => {
+    window.parent?.postMessage({ type: "mas-vc-widget", open }, "*");
+  }, [open]);
 
   const identityRef = useRef(identity);
   identityRef.current = identity;

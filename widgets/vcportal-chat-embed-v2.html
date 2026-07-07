@@ -1,24 +1,22 @@
 <!--
   MAS VC Chatbot — WordPress embed (code-first / off-n8n version).
 
-  Paste into an Elementor HTML widget on masadvise.org/vcportal. Replaces the old
-  @n8n/chat widget (vcportal-chat-widget.html). It embeds the standalone Next.js
-  chat app in an iframe and hands it the logged-in VC's WordPress identity via
-  postMessage — the app resolves the CiviCRM contact ID server-side from the
-  email when it isn't already cached.
+  Paste into the Elementor HTML widget that currently holds the @n8n/chat widget
+  (Block 1) on masadvise.org/vcportal. Leave the "Update your info" modal block
+  (Block 2, vc-update-profile) as-is — that flow is still on n8n.
 
-  Set APP_URL to the deployed app origin before publishing.
+  The Next.js app is a self-contained floating widget (its own toggle + panel).
+  This embed loads it in a transparent, bottom-right iframe and resizes the
+  iframe via a postMessage handshake: collapsed = just the toggle button,
+  expanded = the full chat panel. WP identity is handed to the app on ready;
+  the app resolves the CiviCRM contact ID server-side from the email.
 -->
-<div id="mas-vc-launcher"></div>
-
 <script>
 (function () {
-  var APP_URL = "https://mas-vc-chatbot.vercel.app"; // <-- set to the deployed origin
+  var APP_URL = "https://mas-vc-chatbot.vercel.app";
 
-  var launcher = document.getElementById("mas-vc-launcher");
-  var iframe, wpUser = {};
-
-  // 1. Fetch the logged-in WP user (nonce-authenticated). Mirrors the old widget.
+  // 1. Fetch the logged-in WP user (nonce-authenticated), same as the old widget.
+  var wpUser = {};
   function loadIdentity() {
     var nonce = (window.wpApiSettings && window.wpApiSettings.nonce) || "";
     return fetch("/wp-json/wp/v2/users/me?context=edit", {
@@ -38,43 +36,32 @@
       .catch(function () { /* anonymous — KB still works */ });
   }
 
-  // 2. When the iframe app signals readiness, send identity.
+  // 2. Bottom-right transparent iframe; starts collapsed (toggle only).
+  var iframe = document.createElement("iframe");
+  iframe.src = APP_URL;
+  iframe.title = "MAS AI Assistant";
+  iframe.allow = "clipboard-write";
+  iframe.setAttribute("allowtransparency", "true");
+  iframe.style.cssText =
+    "position:fixed;bottom:0;right:0;width:100px;height:100px;border:none;" +
+    "background:transparent;z-index:99999;transition:width .2s ease,height .2s ease;";
+  document.body.appendChild(iframe);
+
+  function setSize(open) {
+    iframe.style.width = open ? "min(440px, 100vw)" : "100px";
+    iframe.style.height = open ? "100dvh" : "100px";
+  }
+
+  // 3. Handshake: send identity on ready; resize on open/close.
   window.addEventListener("message", function (e) {
-    if (e.origin !== APP_URL) return;
-    if (e.data && e.data.type === "mas-vc-ready" && iframe) {
+    if (e.origin !== APP_URL || !e.data) return;
+    if (e.data.type === "mas-vc-ready") {
       iframe.contentWindow.postMessage({ type: "mas-vc-identity", payload: wpUser }, APP_URL);
+    } else if (e.data.type === "mas-vc-widget") {
+      setSize(!!e.data.open);
     }
   });
 
-  // 3. Floating button + iframe panel.
-  function mount() {
-    var btn = document.createElement("button");
-    btn.textContent = "Ask MAS AI";
-    btn.style.cssText =
-      "position:fixed;bottom:20px;right:20px;z-index:9998;background:#2563eb;color:#fff;" +
-      "border:none;border-radius:24px;padding:12px 20px;font-size:15px;font-weight:600;" +
-      "cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)";
-
-    var panel = document.createElement("div");
-    panel.style.cssText =
-      "position:fixed;bottom:78px;right:20px;z-index:9999;width:min(420px,calc(100vw - 40px));" +
-      "height:min(640px,calc(100dvh - 120px));display:none;border-radius:14px;overflow:hidden;" +
-      "box-shadow:0 8px 30px rgba(0,0,0,.25);background:#fff";
-
-    iframe = document.createElement("iframe");
-    iframe.src = APP_URL;
-    iframe.style.cssText = "width:100%;height:100%;border:none";
-    iframe.allow = "clipboard-write";
-    panel.appendChild(iframe);
-
-    btn.addEventListener("click", function () {
-      panel.style.display = panel.style.display === "none" ? "block" : "none";
-    });
-
-    launcher.appendChild(btn);
-    launcher.appendChild(panel);
-  }
-
-  loadIdentity().then(mount);
+  loadIdentity();
 })();
 </script>
