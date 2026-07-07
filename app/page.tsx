@@ -103,14 +103,31 @@ export default function Page() {
           <div ref={scrollRef} style={S.body}>
             <Bubble role="bot">{WELCOME}</Bubble>
 
-            {messages.map((m) => {
+            {messages.map((m, i) => {
               const { body } = splitSuggestions(messageText(m));
-              const text = body || (busy && m.role === "assistant" ? "…" : "");
+              const streaming = busy && i === messages.length - 1;
+              const text = body || (streaming && m.role === "assistant" ? "…" : "");
               if (!text) return null;
+              if (m.role !== "assistant") {
+                return (
+                  <Bubble key={m.id} role="user">
+                    {text}
+                  </Bubble>
+                );
+              }
               return (
-                <Bubble key={m.id} role={m.role === "user" ? "user" : "bot"}>
-                  {text}
-                </Bubble>
+                <div key={m.id} style={S.botGroup}>
+                  <Bubble role="bot">{text}</Bubble>
+                  {!streaming && (
+                    <Feedback
+                      sessionId={sessionId}
+                      messageIndex={i}
+                      userMessage={prevUserText(messages, i)}
+                      botResponse={body}
+                      metadata={identity}
+                    />
+                  )}
+                </div>
               );
             })}
 
@@ -173,6 +190,101 @@ function Bubble({ role, children }: { role: "bot" | "user"; children: string }) 
   );
 }
 
+function prevUserText(messages: UIMessage[], i: number): string {
+  for (let j = i - 1; j >= 0; j--) {
+    if (messages[j].role === "user") return messageText(messages[j]);
+  }
+  return "";
+}
+
+function Feedback({
+  sessionId,
+  messageIndex,
+  userMessage,
+  botResponse,
+  metadata,
+}: {
+  sessionId: string;
+  messageIndex: number;
+  userMessage: string;
+  botResponse: string;
+  metadata: Identity;
+}) {
+  const [rating, setRating] = useState<"up" | "down" | null>(null);
+  const [showComment, setShowComment] = useState(false);
+  const [comment, setComment] = useState("");
+  const [sent, setSent] = useState(false);
+
+  function submit() {
+    void fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_id: sessionId,
+        message_index: messageIndex,
+        user_message: userMessage,
+        bot_response_preview: botResponse.slice(0, 500),
+        rating,
+        comment: comment || null,
+        metadata,
+      }),
+    }).catch(() => {});
+    setSent(true);
+  }
+
+  if (sent) {
+    return (
+      <div className="chat-feedback">
+        <div className="chat-feedback-sent">Thanks for your feedback!</div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="chat-feedback">
+        <button
+          title="Helpful"
+          className={rating === "up" ? "selected" : ""}
+          onClick={() => {
+            setRating("up");
+            setShowComment(true);
+          }}
+        >
+          <ThumbIcon />
+        </button>
+        <button
+          title="Not helpful"
+          className={rating === "down" ? "selected" : ""}
+          onClick={() => {
+            setRating("down");
+            setShowComment(true);
+          }}
+        >
+          <ThumbIcon down />
+        </button>
+        <button title="Add a comment" onClick={() => setShowComment(true)}>
+          <CommentIcon />
+        </button>
+      </div>
+      {showComment && (
+        <div className="chat-feedback-comment">
+          <input
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Add a comment (optional)..."
+            maxLength={2000}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") submit();
+            }}
+          />
+          <button onClick={submit}>Send</button>
+        </div>
+      )}
+    </>
+  );
+}
+
 function Chips({ items, onPick }: { items: string[]; onPick: (s: string) => void }) {
   return (
     <div style={S.chips}>
@@ -190,6 +302,42 @@ function SendIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="22" y1="2" x2="11" y2="13" />
       <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+  );
+}
+
+function ThumbIcon({ down }: { down?: boolean }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ display: "block", transform: down ? "rotate(180deg)" : "none" }}
+    >
+      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+    </svg>
+  );
+}
+
+function CommentIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ display: "block" }}
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   );
 }
@@ -261,6 +409,7 @@ const S: Record<string, React.CSSProperties> = {
     overflowWrap: "anywhere",
   },
   link: { color: "#2563eb", textDecoration: "underline" },
+  botGroup: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 },
   chips: {
     display: "flex",
     flexDirection: "column",
