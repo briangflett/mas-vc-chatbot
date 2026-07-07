@@ -5,12 +5,13 @@
 # OS
 .DS_Store
 
-# Build artifacts (if Next.js is reactivated)
+# Build artifacts
 /node_modules
 /.next/
 /out/
 /build
 /.vercel
+*.tsbuildinfo
 
 # Editor
 *.swp

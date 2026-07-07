@@ -1,38 +1,44 @@
 # MAS VC Chatbot
 
-AI chatbot for MAS (Management Advisory Service) Volunteer Coordinators (~50 users). Searches CiviCRM contacts/cases and queries a knowledge base about MAS processes.
+AI chatbot for MAS (Management Advisory Service) Volunteer Coordinators (~30 active on the VC Portal). Searches CiviCRM contacts/cases and queries a MAS knowledge base.
+
+**Migrated off n8n** to a code-first Next.js app (this repo). The n8n implementation stays live until parallel-run validation completes — see [`docs/CUTOVER.md`](docs/CUTOVER.md).
 
 ## Architecture
 
-All business logic runs in **n8n workflows** on [n8n.masadvise.org](https://n8n.masadvise.org). The chat interface uses n8n's built-in Chat Trigger widget, embedded on masadvise.org via WordPress.
-
 ```
-n8n Chat Trigger (public hosted) -> AI Agent -> [Streaming Response]
-                                      |
-                            +-- Anthropic Claude Sonnet 4 (LLM)
-                            +-- Window Buffer Memory (10 messages)
-                            +-- 4 CiviCRM Tools -> vc-chatbot-civicrm-sub -> CiviCRM API4
-                            +-- 1 KB Search Tool -> PGVector Store (pgvector on Azure PostgreSQL)
+WordPress (masadvise.org/vcportal)
+  └─ iframe embed (widgets/vcportal-chat-embed-v2.html) — posts wp_user identity
+       └─ Next.js app on Vercel
+            ├─ app/page.tsx           chat UI (Vercel AI SDK useChat, streaming)
+            └─ app/api/chat/route.ts  agent endpoint → lib/ (model · prompt · identity ·
+                                      civicrm · tools · kb · embeddings · db · logging)
 ```
 
-## n8n Workflows
+- **Model**: Claude Haiku 4.5 (default), via the Vercel AI SDK. Provider selectable (`LLM_PROVIDER=anthropic|openrouter`).
+- **CiviCRM**: API4 with redaction-based access control (queries run unrestricted; PII is nulled on rows outside the VC's authorised scope).
+- **Knowledge base**: hybrid vector + BM25 retrieval (RRF) over `kb_chunks`/`kb_documents` on the shared Azure Postgres, KB scope `mas_vc`.
 
-| Workflow | ID | Status | Purpose |
-|----------|----|--------|---------|
-| vc-chatbot-stream | O0phZvFcYNr7BGis | Active | Main chat: Chat Trigger + AI Agent + tools + memory |
-| vc-chatbot-civicrm-sub | nmVIws1rIVYhpgMi | Active | Sub-workflow: routes CiviCRM tool calls to API4 |
-| vc-chatbot-ingest | d1yOknmooRczDmIc | Active | KB document ingestion into pgvector |
-| civicrm-tool-handler | KKik67GlUddpDQED | Active | Standalone CiviCRM API wrapper with eval framework |
+## Develop
+
+```bash
+pnpm install
+pnpm dev            # http://localhost:3005
+pnpm build          # production build (real typecheck)
+pnpm lint           # tsc --noEmit
+pnpm test           # vitest
+node --env-file=.env.local --import tsx scripts/verify-kb.ts "How do I close a project?"
+```
+
+See [`.env.example`](.env.example) for configuration.
 
 ## Documentation
 
-- [HANDOFF.md](docs/HANDOFF.md) - Canonical project state, architecture, roadmap
-- [DECISIONS.md](docs/DECISIONS.md) - Architectural Decision Records
-- [KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md) - KB document templates and setup
-- [CIVICRM_TOOLS.md](docs/CIVICRM_TOOLS.md) - CiviCRM tool specifications
-- [N8N_WORKFLOWS.md](docs/N8N_WORKFLOWS.md) - Workflow architecture details
+- [`CLAUDE.md`](CLAUDE.md) — architecture + conventions for Claude Code
+- [`docs/CUTOVER.md`](docs/CUTOVER.md) — off-n8n deploy + cutover checklist
+- [`docs/PROJECT_SPEC.md`](docs/PROJECT_SPEC.md) — original design spec (n8n-era; historical)
+- BrianPKM `4-Archive/mas-vc-chatbot-decisions.md` — ADRs (ADR-012 = off-n8n)
 
-## Related
+## The n8n implementation (being retired)
 
-- Workflow JSON exports: [`briangflett/n8n-brian-workflows`](https://github.com/briangflett/n8n-brian-workflows) (private) under `mas-vc-chatbot/workflows/`
-- n8n instance: https://n8n.masadvise.org
+Workflows on [n8n.masadvise.org](https://n8n.masadvise.org): `vc-chatbot-stream`, `vc-chatbot-civicrm-sub`, `kb-retrieval-sub`, `vc-chatbot-feedback`, `vc-chatbot-log-turn`, `vc-update-profile`. Feedback capture and the profile self-service flow are deferred fast-follows (still on n8n after this pass).
