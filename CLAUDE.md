@@ -1,16 +1,10 @@
 # MAS VC Chatbot — Claude Guide
 
-## CRITICAL: Security
-
-**NEVER commit secrets to git.** Check before every commit: `git diff --cached`
-Real secrets ONLY in `.env.local` (git-ignored). Reference: @/home/brian/SECURITY.md
+@/home/brian/workspace/claude/context/mas-claude-context/claude-code/global/protocols/security-preamble.md
 
 ---
 
-## Session Lifecycle
-
-- **Start**: `/bootstrap` (loads Klaus context, checks pending handoffs)
-- **End**: `/wrapup`
+@/home/brian/workspace/claude/context/mas-claude-context/claude-code/global/protocols/session-lifecycle.md
 
 **Project-specific context** (read at session start):
 1. `docs/PROJECT_SPEC.md` — original design spec (n8n-era; historical)
@@ -22,7 +16,7 @@ Real secrets ONLY in `.env.local` (git-ignored). Reference: @/home/brian/SECURIT
 ## Project Overview
 
 **Purpose**: AI chatbot for MAS Volunteer Coordinators (~30 active on the VC Portal) to search CiviCRM contacts/cases and query a MAS knowledge base.
-**Status**: **Migrated off n8n → code-first Next.js app** (this repo). The n8n stack stays live until parallel-run validation completes, then is disabled at cutover.
+**Status**: **Migrated off n8n → code-first Next.js app** (this repo). Cutover complete — the n8n workflows were unpublished 2026-07-07; this app is the only live path.
 **Deployment**: Standalone Next.js app on Vercel; embedded on masadvise.org/vcportal via an iframe (`widgets/vcportal-chat-embed-v2.html`).
 
 ---
@@ -76,11 +70,11 @@ See `.env.example` (authoritative). Deploy prereqs for cutover live in `docs/CUT
 
 ---
 
-## The n8n workflows (retire at cutover)
+## The n8n workflows (retired)
 
-Historical, on n8n.masadvise.org — disable only after parallel-run validation:
-`vc-chatbot-stream` (O0phZvFcYNr7BGis), `vc-chatbot-civicrm-sub` (nmVIws1rIVYhpgMi), `kb-retrieval-sub` (eLwfr4GbXtM1gCmJ), `vc-chatbot-feedback` (qEpr6ozyCjZyi57Y), `vc-chatbot-log-turn` (DeJuZrPKFwIHBEey), `vc-update-profile` (5OarmqbQLcSJa6zU), plus eval scaffolds. Feedback capture is now in-code (`app/api/feedback` → `vc_chatbot_feedback`), so `vc-chatbot-feedback` retires with the rest. The **vc-update-profile self-service flow is the one remaining deferred fast-follow** (not in this pass).
+Unpublished at the 2026-07-07 cutover (historical IDs kept for archive reference):
+`vc-chatbot-stream` (O0phZvFcYNr7BGis), `vc-chatbot-civicrm-sub` (nmVIws1rIVYhpgMi), `kb-retrieval-sub` (eLwfr4GbXtM1gCmJ), `vc-chatbot-feedback` (qEpr6ozyCjZyi57Y), `vc-chatbot-log-turn` (DeJuZrPKFwIHBEey), `vc-update-profile` (5OarmqbQLcSJa6zU), plus eval scaffolds. Feedback capture is in-code (`app/api/feedback` → `vc_chatbot_feedback`). The **vc-update-profile self-service flow is the one remaining deferred fast-follow** — it needs a code-first replacement, not an n8n revival.
 
 ---
 
-**Last Updated**: 2026-07-06
+**Last Updated**: 2026-07-09
