@@ -47,6 +47,8 @@ WordPress (masadvise.org/vcportal)
 
 CiviCRM queries run **unrestricted** (`checkPermissions:false` — trusted service account). `lib/civicrm.ts:getAuthContext()` resolves the VC's authorised contact/org IDs (clients on their own cases via the `"Case Coordinator is"` relation, plus those orgs and client reps); the per-tool redactors in `lib/tools.ts` NULL email/phone on out-of-scope rows. VC emails additionally pass through on consent (`MAS_Rep.Share_Email_with_VC_s`).
 
+> **⚠️ Divergence watch — CiviCRM client is duplicated.** The `civiApi4()` transport in `lib/civicrm.ts` is mirrored by the sibling **`mas-civicrm-mcp-server/src/civicrm/client.ts`** (internal MAS Operations Assistant). Both hit the same live CiviCRM with the same wire protocol (endpoint, `X-Civi-Auth`/`X-Civi-Key` headers, form-urlencoded `params`, site-root `CIVICRM_BASE_URL`, `CiviError` handling). This copy is the deployed/battle-tested one — when you change the transport or auth here, check the MCP server for drift (its `CLAUDE.md` → "Divergence watch"). The redaction/access-control layer above is intentionally **not** shared (the MCP server's consumer is trusted, so it has none).
+
 ---
 
 ## Conventions
