@@ -1,10 +1,10 @@
 # MAS VC Chatbot — Claude Guide
 
-@/home/brian/workspace/claude/context/mas-claude-context/claude-code/global/protocols/security-preamble.md
+@/home/brian/workspace/development/klaus/.claude/home/protocols/security-preamble.md
 
 ---
 
-@/home/brian/workspace/claude/context/mas-claude-context/claude-code/global/protocols/session-lifecycle.md
+@/home/brian/workspace/development/klaus/.claude/home/protocols/session-lifecycle.md
 
 **Project-specific context** (read at session start):
 1. `docs/PROJECT_SPEC.md` — original design spec (n8n-era; historical)
