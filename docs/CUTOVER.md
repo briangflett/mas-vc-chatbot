@@ -1,12 +1,28 @@
-# MAS VC Chatbot — Off-n8n Cutover Checklist
+# MAS VC Chatbot — Off-n8n Cutover Record
 
-This app replaces the n8n implementation of the VC chatbot. Cutover is **parallel-run then swap** — the n8n stack keeps serving production until the new app is validated.
+> **Completed. This is a record, not a live checklist.** The n8n workflows were unpublished
+> 2026-07-07 and this app is the only live path. The unticked boxes below are preserved as the
+> plan that was followed, not as outstanding work — do not read them as a to-do list.
+>
+> Two classes of item are worth distinguishing if you are auditing this:
+> **repo-verifiable** — the code is off n8n (every `n8n` string in `app/`, `lib/`, `widgets/`,
+> `scripts/` is a provenance comment; the update widget posts to
+> `https://mas-vc-chatbot.vercel.app/api/profile`), confirmed 2026-09-06.
+> **Not verifiable from the repo** — whether the Elementor blocks on masadvise.org were actually
+> swapped (steps 4/4b). Those live in WordPress. The repo can only show that the widget files
+> were updated to point at the app.
+>
+> Kept because the env-var list (§2) and the rollback notes are still the reference for
+> redeploying, and because the identity trust-model note at the bottom is a live follow-up.
+
+This app replaces the n8n implementation of the VC chatbot. The cutover strategy was
+**parallel-run then swap** — the n8n stack kept serving production until the new app was validated.
 
 ## Scope of this migration pass
 
 **In:** the core chatbot — stream agent (system prompt + Haiku 4.5), the 5 CiviCRM tools with the redaction-based access-control layer, KB hybrid retrieval, turn logging to `vc_chatbot_conversations`, and **feedback capture** (thumbs/comment → `app/api/feedback` → `vc_chatbot_feedback`; verified live).
 
-**Also ported:** `vc-update-profile` (the self-service "Update Info" widget) → `app/api/profile` (`resolve`/`get`/`save` ops, 1:1 from the n8n Code nodes). All three verified against live CiviCRM, incl. an idempotent `save` round-trip. The only remaining n8n surface is the widget still pointing at the old webhook until the Elementor Block-2 swap (step 4b).
+**Also ported:** `vc-update-profile` (the self-service "Update Info" widget) → `app/api/profile` (`resolve`/`get`/`save` ops, 1:1 from the n8n Code nodes). All three verified against live CiviCRM, incl. an idempotent `save` round-trip. *(At the time of writing, the widget still pointed at the old webhook pending the Elementor Block-2 swap in step 4b. `widgets/vcportal-update-widget.html` now points at `/api/profile`.)*
 
 ## 1. Repo / org placement (Brian — org admin)
 
@@ -44,7 +60,7 @@ This app replaces the n8n implementation of the VC chatbot. Cutover is **paralle
 - [ ] Open the modal as a logged-in VC: confirm it loads current values (`get`), then Save and confirm "Saved. Thanks!" (`save`). If the VC has no cached `civicrm_contact_id`, the `resolve` op runs first.
 - **Rollback:** revert Block-2 to the n8n webhook URL. `vc-update-profile` stays active until step 5.
 
-## 5. Retire n8n (only after validation holds)
+## 5. Retire n8n (only after validation holds) — done 2026-07-07
 
 - [ ] Disable the n8n workflows listed in `CLAUDE.md` (§ "The n8n workflows").
 - [ ] `vc-update-profile` can be disabled once Block-2 (step 4b) is swapped and verified. `vc-chatbot-feedback` can be disabled now — feedback is captured in-code.

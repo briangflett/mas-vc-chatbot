@@ -75,8 +75,12 @@ See `.env.example` (authoritative). Deploy prereqs for cutover live in `docs/CUT
 ## The n8n workflows (retired)
 
 Unpublished at the 2026-07-07 cutover (historical IDs kept for archive reference):
-`vc-chatbot-stream` (O0phZvFcYNr7BGis), `vc-chatbot-civicrm-sub` (nmVIws1rIVYhpgMi), `kb-retrieval-sub` (eLwfr4GbXtM1gCmJ), `vc-chatbot-feedback` (qEpr6ozyCjZyi57Y), `vc-chatbot-log-turn` (DeJuZrPKFwIHBEey), `vc-update-profile` (5OarmqbQLcSJa6zU), plus eval scaffolds. Feedback capture is in-code (`app/api/feedback` → `vc_chatbot_feedback`). The **vc-update-profile self-service flow is the one remaining deferred fast-follow** — it needs a code-first replacement, not an n8n revival.
+`vc-chatbot-stream` (O0phZvFcYNr7BGis), `vc-chatbot-civicrm-sub` (nmVIws1rIVYhpgMi), `kb-retrieval-sub` (eLwfr4GbXtM1gCmJ), `vc-chatbot-feedback` (qEpr6ozyCjZyi57Y), `vc-chatbot-log-turn` (DeJuZrPKFwIHBEey), `vc-update-profile` (5OarmqbQLcSJa6zU), plus eval scaffolds.
+
+**All six have code-first replacements — there are no deferred fast-follows left.** Feedback capture is `app/api/feedback` → `vc_chatbot_feedback`; the `vc-update-profile` self-service flow is `app/api/profile`, ported in `cf5665e`. *(This paragraph previously called `vc-update-profile` "the one remaining deferred fast-follow", which `docs/CUTOVER.md` had already contradicted.)*
+
+`vc-chatbot-eval-harness.json` at the repo root is an n8n workflow export kept as an n8n-era artefact. Not runnable — there is no n8n to run it on.
 
 ---
 
-**Last Updated**: 2026-07-09
+**Last Updated**: 2026-09-06
