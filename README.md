@@ -37,19 +37,28 @@ See [`.env.example`](.env.example) for configuration.
 - [`CLAUDE.md`](CLAUDE.md) — architecture + conventions for Claude Code
 - [`docs/CUTOVER.md`](docs/CUTOVER.md) — the off-n8n cutover record (completed; kept for the rollback and env-var detail)
 - [`docs/PROJECT_SPEC.md`](docs/PROJECT_SPEC.md) — original design spec (n8n-era; historical)
+- [`docs/CIVICRM_TOOLS.md`](docs/CIVICRM_TOOLS.md) — the CiviCRM tool definitions (n8n-era; the tool *contracts* still describe what `lib/tools.ts` implements, but its transport examples are n8n webhooks)
 - BrianPKM `4-Archive/mas-vc-chatbot-decisions.md` — ADRs (ADR-012 = off-n8n)
 
 ## The n8n implementation (retired)
 
-**Nothing in this repo calls n8n at runtime.** Every remaining `n8n` string in `app/`, `lib/`,
-`widgets/` and `scripts/` is a provenance comment naming the workflow a file was ported from.
+**The deployed app does not call n8n.** In `app/`, `lib/`, `scripts/` and `tests/`, every remaining
+`n8n` string is either a provenance comment naming the workflow a file was ported from, or a CSS
+class / UI label inherited from the old widget.
+
+**One exception, and it is a live one.** `widgets/vcportal-chat-widget.html` is the *pre-migration*
+Block 1 paste artefact: it loads the `@n8n/chat` CDN bundle and calls three webhooks on
+n8n.masadvise.org. It is not part of the Next.js build and is not deployed, but it is still in the
+repo, so pasting it into Elementor would fire dead n8n calls. It now carries a
+**⚠ RETIRED — DO NOT PASTE** header naming the two files that replace it. Kept as the reference for
+what the replacement had to match.
 
 The workflows — `vc-chatbot-stream`, `vc-chatbot-civicrm-sub`, `kb-retrieval-sub`,
 `vc-chatbot-feedback`, `vc-chatbot-log-turn`, `vc-update-profile` — were unpublished on
 n8n.masadvise.org at the 2026-07-07 cutover. Historical IDs are in [`CLAUDE.md`](CLAUDE.md)
 § *The n8n workflows*.
 
-Both flows this section used to call deferred are now in code: **feedback capture** at
+Both flows this section used to call deferred fast-follows are now in code: **feedback capture** at
 `app/api/feedback` → `vc_chatbot_feedback`, and the **profile self-service flow** at
 `app/api/profile` (ported in `cf5665e`).
 
