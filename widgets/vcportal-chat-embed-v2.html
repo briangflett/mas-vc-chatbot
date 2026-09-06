@@ -1,9 +1,12 @@
 <!--
   MAS VC Chatbot — WordPress embed (code-first / off-n8n version).
 
-  Paste into the Elementor HTML widget that currently holds the @n8n/chat widget
-  (Block 1) on masadvise.org/vcportal. Leave the "Update your info" modal block
-  (Block 2, vc-update-profile) as-is — that flow is still on n8n.
+  Paste into the Elementor HTML widget that holds the chat widget (Block 1) on
+  masadvise.org/vcportal, replacing the old @n8n/chat embed.
+
+  Block 2 (the "Update your info" modal) is a separate paste — use
+  widgets/vcportal-update-widget.html, which posts to this app's /api/profile.
+  That flow is no longer on n8n; the n8n workflows were unpublished 2026-07-07.
 
   The Next.js app is a self-contained floating widget (its own toggle + panel).
   This embed loads it in a transparent, bottom-right iframe and resizes the

@@ -1,3 +1,18 @@
+<!--
+  ⚠ RETIRED — n8n-era Block 1. DO NOT PASTE THIS INTO WORDPRESS.
+
+  This is the pre-migration chat widget. It loads the @n8n/chat bundle from a CDN and
+  calls three n8n webhooks on n8n.masadvise.org (chat, vc-update-profile, feedback).
+  Those workflows were unpublished at the 2026-07-07 cutover, so pasting this gives a
+  chat box that silently fails.
+
+  Use instead:
+    Block 1  → widgets/vcportal-chat-embed-v2.html   (iframes the Next.js app)
+    Block 2  → widgets/vcportal-update-widget.html   (posts to /api/profile)
+
+  Kept only as the reference for what the n8n widget looked like — the starter chips,
+  the feedback affordance and the CSS the replacement had to match.
+-->
 <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
 <style>
   #n8n-chat .chat-window {
