@@ -1,21 +1,24 @@
 # MAS VC Chatbot — Off-n8n Cutover Record
 
 > **Completed. This is a record, not a live checklist.** The n8n workflows were unpublished
-> 2026-07-07 and this app is the only live path. The unticked boxes below are preserved as the
+> 2026-07-07 and this app is the only live path — **on the record in `CLAUDE.md` § *The n8n
+> workflows* and in the sibling `mas-ops-knowledge-base`, not from a check made here.** Every
+> statement below that reasons from the unpublishing inherits that basis. The unticked boxes below are preserved as the
 > plan that was followed, not as outstanding work — do not read them as a to-do list.
 >
 > Two classes of item are worth distinguishing if you are auditing this:
 >
 > **Repo-verifiable** — the deployed app is off n8n. Every `n8n` string in `app/`, `lib/`,
-> `scripts/` and `tests/` is a provenance comment or an inherited CSS/UI label, and
+> `scripts/` and `tests/` is a comment, and
 > `widgets/vcportal-update-widget.html` posts to `https://mas-vc-chatbot.vercel.app/api/profile`.
-> Confirmed 2026-09-06. **One caveat:** `widgets/vcportal-chat-widget.html` is the retired n8n-era
-> Block 1 and still contains live n8n URLs — not built, not deployed, and now labelled
-> ⚠ RETIRED, but present.
+> Confirmed 2026-09-06. **One caveat:** `widgets/retired-vcportal-chat-widget-n8n.html` is the
+> retired n8n-era Block 1 and still contains live n8n URLs — not built, not deployed, renamed and
+> ⚠ RETIRED-headered, but present.
 >
 > **Not verifiable from the repo** — whether the Elementor blocks on masadvise.org were actually
-> swapped (steps 4/4b), and whether the workflows are in fact unpublished on n8n.masadvise.org.
-> Those live in WordPress and in n8n. The repo can only show the widget files were updated.
+> swapped (steps 4/4b). That lives in WordPress; the repo can only show the widget files were
+> updated. The unpublishing is likewise unverifiable *from here*, which is why it is sourced above
+> rather than asserted.
 >
 > ⚠ **The "Rollback" lines in §4 and §4b no longer work.** They say to re-point Elementor at the
 > old n8n embed — but the workflows were unpublished 2026-07-07, so there is nothing to roll back
@@ -44,7 +47,7 @@ This app replaces the n8n implementation of the VC chatbot. The cutover strategy
 
 ## 2. Vercel project (Brian) — done
 
-*The app is live at `https://mas-vc-chatbot.vercel.app`, which the widgets and §4b both cite. Env-var list retained below as the redeploy reference.*
+*The app is live at `https://mas-vc-chatbot.vercel.app`, which the widgets and §4b both cite — so the project exists and serves. Whether each individual bullet below (firewall, every env var) was ticked is not recorded; the list is retained as the redeploy reference rather than as evidence.*
 
 - [ ] Create a Vercel project for this repo (its own project, not Klaus's).
 - [ ] Set env vars (see `.env.example`). Required for full function:
@@ -57,7 +60,7 @@ This app replaces the n8n implementation of the VC chatbot. The cutover strategy
 
 ## 3. Parallel-run validation (before touching the live widget) — done
 
-*Validation completed ahead of the 2026-07-07 cutover. Steps retained as the regression script if the app is ever redeployed from scratch.*
+*Validation completed ahead of the 2026-07-07 cutover — the Scope section above records the KB, the CiviCRM tools and feedback as verified live. The PII-redaction and VC-A/VC-B access-control spot checks are not separately recorded, so treat those two as asserted rather than evidenced. Steps retained as the regression script if the app is ever redeployed from scratch.*
 
 - [ ] Deploy to the Vercel preview/prod URL.
 - [ ] KB: `node --env-file=.env.local --import tsx scripts/verify-kb.ts "…"` (already green locally).
@@ -70,13 +73,13 @@ This app replaces the n8n implementation of the VC chatbot. The cutover strategy
 - [ ] Set `APP_URL` in `widgets/vcportal-chat-embed-v2.html` to the deployed origin.
 - [ ] Replace the old `@n8n/chat` embed on masadvise.org/vcportal (Elementor HTML widget) with `vcportal-chat-embed-v2.html`.
 - [ ] Verify identity handshake: the WP page's logged-in VC gets `[Logged-in VC: Contact ID …]` (visible in the app header showing their name).
-- **Rollback:** re-point the Elementor widget back to the old n8n embed. The n8n workflows are untouched until step 5.
+- ~~**Rollback:** re-point the Elementor widget back to the old n8n embed. The n8n workflows are untouched until step 5.~~ ⚠ **Dead.** The workflows were unpublished at step 5, so there is nothing to re-point at. Recovery means fixing forward, or republishing in n8n first.
 
 ## 4b. Swap the "Update your info" widget (Brian) — **WordPress-side; not verifiable from this repo**
 
 - [ ] Replace the Elementor Block-2 HTML with the updated `widgets/vcportal-update-widget.html` (its `WEBHOOK` now points at `https://mas-vc-chatbot.vercel.app/api/profile`).
 - [ ] Open the modal as a logged-in VC: confirm it loads current values (`get`), then Save and confirm "Saved. Thanks!" (`save`). If the VC has no cached `civicrm_contact_id`, the `resolve` op runs first.
-- **Rollback:** revert Block-2 to the n8n webhook URL. `vc-update-profile` stays active until step 5.
+- ~~**Rollback:** revert Block-2 to the n8n webhook URL. `vc-update-profile` stays active until step 5.~~ ⚠ **Dead**, same reason — `vc-update-profile` was unpublished at step 5.
 
 ## 5. Retire n8n (only after validation holds) — done 2026-07-07
 
@@ -84,10 +87,13 @@ This app replaces the n8n implementation of the VC chatbot. The cutover strategy
 > *is* on record is that the workflows were unpublished on 2026-07-07 — `CLAUDE.md` § *The n8n
 > workflows* carries the IDs, and the sibling `mas-ops-knowledge-base` notes the n8n instance has
 > zero active workflows. So this step is recorded as done on that basis, not on a repo check.
+>
+> **The third bullet is the one item in this document genuinely still open** — it is a note in
+> Klaus's memory, not MAS work, and nothing here depends on it.
 
 - [x] Disable the n8n workflows listed in `CLAUDE.md` (§ "The n8n workflows").
 - [x] `vc-update-profile` disabled — its replacement is `app/api/profile`. `vc-chatbot-feedback` disabled — feedback is captured in-code.
-- [ ] Note in Klaus memory `project_klaus_off_n8n` that the mas-vc-chatbot sibling migration (handoff #634) is complete for the core.
+- [ ] Note in Klaus memory `project_klaus_off_n8n` that the mas-vc-chatbot sibling migration (handoff #634) is complete for the core. ← **genuinely still open** (Klaus-side bookkeeping; see the blockquote above)
 
 ## Notes
 
