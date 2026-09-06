@@ -24,9 +24,14 @@ This app replaces the n8n implementation of the VC chatbot. The cutover strategy
 
 **Also ported:** `vc-update-profile` (the self-service "Update Info" widget) → `app/api/profile` (`resolve`/`get`/`save` ops, 1:1 from the n8n Code nodes). All three verified against live CiviCRM, incl. an idempotent `save` round-trip. *(At the time of writing, the widget still pointed at the old webhook pending the Elementor Block-2 swap in step 4b. `widgets/vcportal-update-widget.html` now points at `/api/profile`.)*
 
-## 1. Repo / org placement (Brian — org admin)
+## 1. Repo / org placement (Brian — org admin) — done
 
-- [ ] Decide final home: transfer `github.com/briangflett/mas-vc-chatbot` to the `masadvise-ontario` org (keeps MAS structurally separate from `npaiadvisor`), or keep under the personal account. Build works either way.
+- [x] Decide final home. **Transferred to `masadvise-ontario/mas-vc-chatbot`**, keeping MAS structurally separate from `npaiadvisor`. Confirmed via the GitHub API 2026-09-06: `briangflett/mas-vc-chatbot` now redirects to the org repo (same repo id).
+- Note for anyone with an older clone: `git remote -v` may still show the pre-transfer
+  `briangflett/...` URL. It works by redirect, but `gh` resolves the base repo from the redirect
+  target while taking the head owner from the URL as written, which makes `gh pr create` fail with
+  *"No commits between masadvise-ontario:main and briangflett:<branch>"*. Fix with:
+  `git remote set-url origin https://github.com/masadvise-ontario/mas-vc-chatbot.git`
 
 ## 2. Vercel project (Brian)
 
